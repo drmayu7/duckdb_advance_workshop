@@ -1,0 +1,11 @@
+# IDE
+.idea/
+
+# Python
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+
+# OS
+.DS_Store
