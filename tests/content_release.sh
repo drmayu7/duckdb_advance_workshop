@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+# The Content release, as the facilitator builds it (#22).
+# Seam 1: `build.sh content` makes duckdb-content-<id>.zip from HEAD with exactly
+# the decided content paths, a release.txt, a content_manifest.csv that matches
+# the zip, a self-contained cards.html, and no repo URL. Applying it on a laptop
+# is tested in content_launcher.sh.
+set -u
+root="$(cd "$(dirname "$0")/.." && pwd)"
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+fail=0
+# shellcheck source=tests/lib/worktree_ref.sh
+source "$root/tests/lib/worktree_ref.sh"
+ref="$(worktree_ref "$root")" || { echo "FAIL: could not snapshot the working tree"; exit 1; }
+ok()  { echo "ok: $*"; }
+bad() { echo "FAIL: $*"; fail=1; }
+
+id=20261110-2100
+if ! DIST_DIR="$tmp/dist" CONTENT_ID="$id" CONTENT_REF="$ref" "$root/build.sh" content >"$tmp/build.log" 2>&1; then
+  bad "build.sh content failed:"; sed 's/^/  /' "$tmp/build.log"; exit 1
+fi
+zip="$tmp/dist/duckdb-content-$id.zip"
+[ -f "$zip" ] || { bad "no $zip"; exit 1; }
+
+# The decided content paths, as committed at HEAD, plus the four built files.
+{
+  git -C "$root" ls-tree -r --name-only "$ref" -- cards solutions expected data/raw \
+    data/warmup data/capstone capstone demos handouts | grep -v '^capstone/hints\.md$'
+  printf '%s\n' cards.html smoke_test.sql release.txt content_manifest.csv
+} | sort >"$tmp/want"
+zipinfo -1 "$zip" | grep -v '/$' | sort >"$tmp/got"
+if diff -q "$tmp/want" "$tmp/got" >/dev/null; then
+  ok "zip has exactly the decided content paths"
+else
+  bad "zip paths differ (< missing, > unexpected):"; diff "$tmp/want" "$tmp/got" | grep '^[<>]' | sed 's/^/  /'
+fi
+if grep -q '^cards/w-warmup\.md$' "$tmp/got"; then ok "the Warm-up card is in the release"; else bad "no Warm-up card"; fi
+
+if never="$(grep -E '^(bin|repo|generator|capstone_truth)/|^start-workshop\.|^install\.sql$|\.duckdb$|^capstone/hints\.md$|^updates/' "$tmp/got")"; then
+  bad "release holds paths it must never hold: $(xargs <<<"$never")"
+else
+  ok "no bin/, repo/, launchers, install.sql, .duckdb, generator/, capstone_truth/ or hints.md"
+fi
+
+extracted="$tmp/extracted"; mkdir -p "$extracted"; (cd "$extracted" && unzip -q "$zip")
+
+got_id="$(tr -d '\r\n' <"$extracted/release.txt")"
+if [ "$got_id" = "$id" ]; then ok "release.txt holds the id"; else bad "release.txt holds '$got_id', not '$id'"; fi
+
+# content_manifest.csv: path,size for every other file in the zip, sizes as shipped.
+if [ "$(head -1 "$extracted/content_manifest.csv")" = "path,size" ]; then ok "manifest header path,size"
+else bad "manifest header is '$(head -1 "$extracted/content_manifest.csv")'"; fi
+tail -n +2 "$extracted/content_manifest.csv" | sort >"$tmp/manifest"
+(cd "$extracted" && grep -v '^content_manifest\.csv$' "$tmp/got" | while read -r f; do echo "$f,$(wc -c <"$f" | tr -d ' ')"; done) \
+  | sort >"$tmp/actual"
+if diff -q "$tmp/manifest" "$tmp/actual" >/dev/null; then ok "content_manifest.csv matches the zip"
+else bad "content_manifest.csv differs from the zip:"; diff "$tmp/manifest" "$tmp/actual" | grep '^[<>]' | head | sed 's/^/  /'; fi
+
+if leaks="$(grep -r -l -i -e 'drmayu7' -e 'duckdb_advance_workshop' -e 'duckdb-advance-workshop' -e 'github\.com' "$extracted")"; then
+  bad "repo URL or name found in: $leaks"
+else
+  ok "no repo URL or name in any file"
+fi
+
+# cards.html: one offline page holding every card, with nothing fetched from the network.
+for card in "$extracted"/cards/*.md; do
+  cid="$(awk -F': *' 'NR > 1 && $1 == "id" { print $2; exit }' "$card")"
+  grep -q "id=\"card-$cid\"" "$extracted/cards.html" || bad "cards.html has no card '$cid'"
+done
+[ "$fail" = 0 ] && ok "cards.html holds every card"
+if ext="$(grep -Eo '(src|href)="(https?:)?//[^"]*"' "$extracted/cards.html")"; then
+  bad "cards.html loads from the network: $(xargs <<<"$ext")"
+else
+  ok "cards.html loads nothing from the network"
+fi
+if grep -q '<style' "$extracted/cards.html"; then ok "cards.html carries its own style"; else bad "cards.html has no inline style"; fi
+exit $fail

@@ -28,6 +28,20 @@ if ! { : >"$LOG"; } 2>/dev/null; then
   : >"$LOG"
 fi
 
+# Content releases dropped unopened into updates/ are applied in name order, over
+# this folder (overwrite, never delete), then moved to updates/applied/ so they are
+# never applied again over newer files. One that fails stays in updates/ and is U1.
+WORKSHOP_U1=0
+for zip in updates/*.zip; do
+  [ -f "$zip" ] || continue
+  echo "Applying $zip" >>"$LOG"
+  if ! { ditto -x -k "$zip" . && mkdir -p updates/applied && mv -f "$zip" updates/applied/; } >>"$LOG" 2>&1; then
+    echo "U1: could not apply $zip" >>"$LOG"
+    WORKSHOP_U1=1
+  fi
+done
+export WORKSHOP_U1
+
 "$DUCKDB" :memory: -f install.sql >>"$LOG" 2>&1
 banner="$("$DUCKDB" :memory: -f smoke_test.sql 2>>"$LOG")"
 [ -n "$banner" ] || banner="SETUP FAILED: the setup check could not run, see $LOG"

@@ -22,7 +22,7 @@ fail=0
 bad() { echo "FAIL: $*"; fail=1; }
 
 EXTS="ui httpfs aws spatial excel stats_duck rapidfuzz splink_udfs gsheets"
-N=14 # V1, nine E-<ext>, D1, W1, W2, F1
+N=15 # V1, nine E-<ext>, D1, W1, W2, F1, U1
 
 # ---- Seam 1: release contents ----------------------------------------------
 if ! DIST_DIR="$tmp/dist" BUNDLE_DATE=20261109 "$root/build.sh" setup >"$tmp/build.log" 2>&1; then
@@ -99,35 +99,35 @@ launch
 expect "second launch on the same folder" $N ""
 
 fresh no-spatial; rm "$b/repo/v1.5.6/osx_arm64/spatial.duckdb_extension.gz"; launch
-expect "missing extension" 13 "E-spatial"
+expect "missing extension" 14 "E-spatial"
 [ -e "$h/.duckdb/extensions/v1.5.6/osx_arm64/spatial.duckdb_extension" ] \
   && bad "missing extension: spatial was downloaded instead of failing"
 
 fresh wrong-cli; cp "$root/.cache/setup/test/duckdb-v1.5.5" "$b/bin/osx_arm64/duckdb"; launch
-expect "wrong CLI (1.5.5)" 4 "$(for e in $EXTS; do printf 'E-%s\n' "$e"; done | sort | xargs) V1"
+expect "wrong CLI (1.5.5)" 5 "$(for e in $EXTS; do printf 'E-%s\n' "$e"; done | sort | xargs) V1"
 
 fresh no-data; rm -rf "$b/data/open"; launch
-expect "no data" 13 "D1"
+expect "no data" 14 "D1"
 
 fresh partial-data; rm "$b/data/open/population_state.parquet"; launch
-expect "one data file missing" 13 "D1"
+expect "one data file missing" 14 "D1"
 
 fresh no-data-list; rm "$b/data/open/SHA256SUMS"; launch
-expect "data/open list missing" 13 "D1"
+expect "data/open list missing" 14 "D1"
 
 fresh read-only; launch; chmod -R a-w "$b"; launch
-expect "read-only folder" 12 "W1 W2"
+expect "read-only folder" 13 "W1 W2"
 
 fresh locked; launch
 "$b/bin/osx_arm64/duckdb" "$b/my_work.duckdb" < <(sleep 60) & holder=$!
 sleep 1; launch; kill "$holder" 2>/dev/null; wait "$holder" 2>/dev/null; holder=""
-expect "work database held by another DuckDB" 13 "W2"
+expect "work database held by another DuckDB" 14 "W2"
 
 for f in OneDrive Desktop Documents; do
   fresh "synced-$f" "$f"; launch
-  expect "folder under $f" 13 "F1"
+  expect "folder under $f" 14 "F1"
 done
 
 fresh several Documents; rm -rf "$b/data/open"; rm "$b/repo/v1.5.6/osx_arm64/excel.duckdb_extension.gz"; launch
-expect "several faults" 11 "D1 E-excel F1"
+expect "several faults" 12 "D1 E-excel F1"
 exit $fail

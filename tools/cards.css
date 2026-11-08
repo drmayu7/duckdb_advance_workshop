@@ -1,0 +1,15 @@
+/* cards.html: read offline in any browser, on a laptop screen beside the DuckDB UI. */
+:root { color-scheme: light dark; --fg: #1d1d1f; --bg: #fff; --muted: #6e6e73; --rule: #d2d2d7; --code: #f5f5f7; --note: #fff4d6; }
+@media (prefers-color-scheme: dark) {
+  :root { --fg: #f5f5f7; --bg: #1c1c1e; --muted: #a1a1a6; --rule: #3a3a3c; --code: #2c2c2e; --note: #3a3220; }
+}
+body { margin: 0 auto; max-width: 52rem; padding: 1rem; font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--fg); background: var(--bg); }
+#TOC { border-bottom: 1px solid var(--rule); padding-bottom: 1rem; }
+.card { border-top: 3px solid var(--rule); margin-top: 2.5rem; padding-top: .5rem; }
+h1 { font-size: 1.6rem; } h2 { font-size: 1.2rem; margin-top: 1.6rem; }
+blockquote { margin: 1rem 0; padding: .5rem 1rem; background: var(--note); border-radius: 6px; }
+code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .9em; }
+pre { background: var(--code); padding: .75rem 1rem; border-radius: 6px; overflow-x: auto; }
+table { border-collapse: collapse; display: block; overflow-x: auto; }
+th, td { border: 1px solid var(--rule); padding: .3rem .6rem; text-align: left; vertical-align: top; }
+@media print { .card { break-before: page; } }
