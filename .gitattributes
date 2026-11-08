@@ -1,0 +1,2 @@
+# Frozen open data and generated data are stored byte-for-byte (no line-ending conversion).
+data/** -text

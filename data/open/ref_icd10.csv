@@ -1,0 +1,151 @@
+icd10,category,title_en,scenario_group,source
+A09.0,A09,Other and unspecified gastroenteritis and colitis of infectious origin,infection,WHO ICD-10 2019
+A09.9,A09,Gastroenteritis and colitis of unspecified origin,infection,WHO ICD-10 2019
+A41.0,A41,Sepsis due to Staphylococcus aureus,infection,WHO ICD-10 2019
+A41.1,A41,Sepsis due to other specified staphylococcus,infection,WHO ICD-10 2019
+A41.2,A41,Sepsis due to unspecified staphylococcus,infection,WHO ICD-10 2019
+A41.3,A41,Sepsis due to Haemophilus influenzae,infection,WHO ICD-10 2019
+A41.4,A41,Sepsis due to anaerobes,infection,WHO ICD-10 2019
+A41.5,A41,Sepsis due to other Gram-negative organisms,infection,WHO ICD-10 2019
+A41.8,A41,Other specified sepsis,infection,WHO ICD-10 2019
+A41.9,A41,"Sepsis, unspecified",infection,WHO ICD-10 2019
+A90,A90,Dengue fever [classical dengue],dengue,WHO ICD-10 2010
+A91,A91,Dengue haemorrhagic fever,dengue,WHO ICD-10 2010
+A97.0,A97,Dengue without warning signs,dengue,WHO ICD-10 2019
+A97.1,A97,Dengue with warning signs,dengue,WHO ICD-10 2019
+A97.2,A97,Severe Dengue,dengue,WHO ICD-10 2019
+A97.9,A97,"Dengue, unspecified",dengue,WHO ICD-10 2019
+E10.0,E10,Type 1 diabetes mellitus with coma,diabetes,WHO ICD-10 2019
+E10.1,E10,Type 1 diabetes mellitus with ketoacidosis,diabetes,WHO ICD-10 2019
+E10.2,E10,Type 1 diabetes mellitus with renal complications,diabetes,WHO ICD-10 2019
+E10.3,E10,Type 1 diabetes mellitus with ophthalmic complications,diabetes,WHO ICD-10 2019
+E10.4,E10,Type 1 diabetes mellitus with neurological complications,diabetes,WHO ICD-10 2019
+E10.5,E10,Type 1 diabetes mellitus with peripheral circulatory complications,diabetes,WHO ICD-10 2019
+E10.6,E10,Type 1 diabetes mellitus with other specified complications,diabetes,WHO ICD-10 2019
+E10.7,E10,Type 1 diabetes mellitus with multiple complications,diabetes,WHO ICD-10 2019
+E10.8,E10,Type 1 diabetes mellitus with unspecified complications,diabetes,WHO ICD-10 2019
+E10.9,E10,Type 1 diabetes mellitus without complications,diabetes,WHO ICD-10 2019
+E11.0,E11,Type 2 diabetes mellitus with coma,diabetes,WHO ICD-10 2019
+E11.1,E11,Type 2 diabetes mellitus with ketoacidosis,diabetes,WHO ICD-10 2019
+E11.2,E11,Type 2 diabetes mellitus with renal complications,diabetes,WHO ICD-10 2019
+E11.3,E11,Type 2 diabetes mellitus with ophthalmic complications,diabetes,WHO ICD-10 2019
+E11.4,E11,Type 2 diabetes mellitus with neurological complications,diabetes,WHO ICD-10 2019
+E11.5,E11,Type 2 diabetes mellitus with peripheral circulatory complications,diabetes,WHO ICD-10 2019
+E11.6,E11,Type 2 diabetes mellitus with other specified complications,diabetes,WHO ICD-10 2019
+E11.7,E11,Type 2 diabetes mellitus with multiple complications,diabetes,WHO ICD-10 2019
+E11.8,E11,Type 2 diabetes mellitus with unspecified complications,diabetes,WHO ICD-10 2019
+E11.9,E11,Type 2 diabetes mellitus without complications,diabetes,WHO ICD-10 2019
+E13.0,E13,Other specified diabetes mellitus with coma,diabetes,WHO ICD-10 2019
+E13.1,E13,Other specified diabetes mellitus with ketoacidosis,diabetes,WHO ICD-10 2019
+E13.2,E13,Other specified diabetes mellitus with renal complications,diabetes,WHO ICD-10 2019
+E13.3,E13,Other specified diabetes mellitus with ophthalmic complications,diabetes,WHO ICD-10 2019
+E13.4,E13,Other specified diabetes mellitus with neurological complications,diabetes,WHO ICD-10 2019
+E13.5,E13,Other specified diabetes mellitus with peripheral circulatory complications,diabetes,WHO ICD-10 2019
+E13.6,E13,Other specified diabetes mellitus with other specified complications,diabetes,WHO ICD-10 2019
+E13.7,E13,Other specified diabetes mellitus with multiple complications,diabetes,WHO ICD-10 2019
+E13.8,E13,Other specified diabetes mellitus with unspecified complications,diabetes,WHO ICD-10 2019
+E13.9,E13,Other specified diabetes mellitus without complications,diabetes,WHO ICD-10 2019
+E14.0,E14,Unspecified diabetes mellitus with coma,diabetes,WHO ICD-10 2019
+E14.1,E14,Unspecified diabetes mellitus with ketoacidosis,diabetes,WHO ICD-10 2019
+E14.2,E14,Unspecified diabetes mellitus with renal complications,diabetes,WHO ICD-10 2019
+E14.3,E14,Unspecified diabetes mellitus with ophthalmic complications,diabetes,WHO ICD-10 2019
+E14.4,E14,Unspecified diabetes mellitus with neurological complications,diabetes,WHO ICD-10 2019
+E14.5,E14,Unspecified diabetes mellitus with peripheral circulatory complications,diabetes,WHO ICD-10 2019
+E14.6,E14,Unspecified diabetes mellitus with other specified complications,diabetes,WHO ICD-10 2019
+E14.7,E14,Unspecified diabetes mellitus with multiple complications,diabetes,WHO ICD-10 2019
+E14.8,E14,Unspecified diabetes mellitus with unspecified complications,diabetes,WHO ICD-10 2019
+E14.9,E14,Unspecified diabetes mellitus without complications,diabetes,WHO ICD-10 2019
+I10,I10,Essential (primary) hypertension,cardiovascular,WHO ICD-10 2019
+I11.0,I11,Hypertensive heart disease with (congestive) heart failure,cardiovascular,WHO ICD-10 2019
+I11.9,I11,Hypertensive heart disease without (congestive) heart failure,cardiovascular,WHO ICD-10 2019
+I20.0,I20,Unstable angina,cardiovascular,WHO ICD-10 2019
+I20.1,I20,Angina pectoris with documented spasm,cardiovascular,WHO ICD-10 2019
+I20.8,I20,Other forms of angina pectoris,cardiovascular,WHO ICD-10 2019
+I20.9,I20,"Angina pectoris, unspecified",cardiovascular,WHO ICD-10 2019
+I21.0,I21,Acute transmural myocardial infarction of anterior wall,cardiovascular,WHO ICD-10 2019
+I21.1,I21,Acute transmural myocardial infarction of inferior wall,cardiovascular,WHO ICD-10 2019
+I21.2,I21,Acute transmural myocardial infarction of other sites,cardiovascular,WHO ICD-10 2019
+I21.3,I21,Acute transmural myocardial infarction of unspecified site,cardiovascular,WHO ICD-10 2019
+I21.4,I21,Acute subendocardial myocardial infarction,cardiovascular,WHO ICD-10 2019
+I21.9,I21,"Acute myocardial infarction, unspecified",cardiovascular,WHO ICD-10 2019
+I50.0,I50,Congestive heart failure,cardiovascular,WHO ICD-10 2019
+I50.1,I50,Left ventricular failure,cardiovascular,WHO ICD-10 2019
+I50.9,I50,"Heart failure, unspecified",cardiovascular,WHO ICD-10 2019
+I63.0,I63,Cerebral infarction due to thrombosis of precerebral arteries,cardiovascular,WHO ICD-10 2019
+I63.1,I63,Cerebral infarction due to embolism of precerebral arteries,cardiovascular,WHO ICD-10 2019
+I63.2,I63,Cerebral infarction due to unspecified occlusion or stenosis of precerebral arteries,cardiovascular,WHO ICD-10 2019
+I63.3,I63,Cerebral infarction due to thrombosis of cerebral arteries,cardiovascular,WHO ICD-10 2019
+I63.4,I63,Cerebral infarction due to embolism of cerebral arteries,cardiovascular,WHO ICD-10 2019
+I63.5,I63,Cerebral infarction due to unspecified occlusion or stenosis of cerebral arteries,cardiovascular,WHO ICD-10 2019
+I63.6,I63,"Cerebral infarction due to cerebral venous thrombosis, nonpyogenic",cardiovascular,WHO ICD-10 2019
+I63.8,I63,Other cerebral infarction,cardiovascular,WHO ICD-10 2019
+I63.9,I63,"Cerebral infarction, unspecified",cardiovascular,WHO ICD-10 2019
+I64,I64,"Stroke, not specified as haemorrhage or infarction",cardiovascular,WHO ICD-10 2019
+J18.0,J18,"Bronchopneumonia, unspecified",respiratory,WHO ICD-10 2019
+J18.1,J18,"Lobar pneumonia, unspecified",respiratory,WHO ICD-10 2019
+J18.2,J18,"Hypostatic pneumonia, unspecified",respiratory,WHO ICD-10 2019
+J18.8,J18,"Other pneumonia, organism unspecified",respiratory,WHO ICD-10 2019
+J18.9,J18,"Pneumonia, unspecified",respiratory,WHO ICD-10 2019
+J44.0,J44,Chronic obstructive pulmonary disease with acute lower respiratory infection,respiratory,WHO ICD-10 2019
+J44.1,J44,"Chronic obstructive pulmonary disease with acute exacerbation, unspecified",respiratory,WHO ICD-10 2019
+J44.8,J44,Other specified chronic obstructive pulmonary disease,respiratory,WHO ICD-10 2019
+J44.9,J44,"Chronic obstructive pulmonary disease, unspecified",respiratory,WHO ICD-10 2019
+J45.0,J45,Predominantly allergic asthma,respiratory,WHO ICD-10 2019
+J45.1,J45,Nonallergic asthma,respiratory,WHO ICD-10 2019
+J45.8,J45,Mixed asthma,respiratory,WHO ICD-10 2019
+J45.9,J45,"Asthma, unspecified",respiratory,WHO ICD-10 2019
+K35.2,K35,Acute appendicitis with generalized peritonitis,surgical,WHO ICD-10 2019
+K35.3,K35,Acute appendicitis with localized peritonitis,surgical,WHO ICD-10 2019
+K35.8,K35,"Acute appendicitis, other and unspecified",surgical,WHO ICD-10 2019
+K80.0,K80,Calculus of gallbladder with acute cholecystitis,surgical,WHO ICD-10 2019
+K80.1,K80,Calculus of gallbladder with other cholecystitis,surgical,WHO ICD-10 2019
+K80.2,K80,Calculus of gallbladder without cholecystitis,surgical,WHO ICD-10 2019
+K80.3,K80,Calculus of bile duct with cholangitis,surgical,WHO ICD-10 2019
+K80.4,K80,Calculus of bile duct with cholecystitis,surgical,WHO ICD-10 2019
+K80.5,K80,Calculus of bile duct without cholangitis or cholecystitis,surgical,WHO ICD-10 2019
+K80.8,K80,Other cholelithiasis,surgical,WHO ICD-10 2019
+N17.0,N17,Acute renal failure with tubular necrosis,renal,WHO ICD-10 2019
+N17.1,N17,Acute renal failure with acute cortical necrosis,renal,WHO ICD-10 2019
+N17.2,N17,Acute renal failure with medullary necrosis,renal,WHO ICD-10 2019
+N17.8,N17,Other acute renal failure,renal,WHO ICD-10 2019
+N17.9,N17,"Acute renal failure, unspecified",renal,WHO ICD-10 2019
+N18.1,N18,"Chronic kidney disease, stage 1",renal,WHO ICD-10 2019
+N18.2,N18,"Chronic kidney disease, stage 2",renal,WHO ICD-10 2019
+N18.3,N18,"Chronic kidney disease, stage 3",renal,WHO ICD-10 2019
+N18.4,N18,"Chronic kidney disease, stage 4",renal,WHO ICD-10 2019
+N18.5,N18,"Chronic kidney disease, stage 5",renal,WHO ICD-10 2019
+N18.9,N18,"Chronic kidney disease, unspecified",renal,WHO ICD-10 2019
+N39.0,N39,"Urinary tract infection, site not specified",infection,WHO ICD-10 2019
+N39.1,N39,"Persistent proteinuria, unspecified",infection,WHO ICD-10 2019
+N39.2,N39,"Orthostatic proteinuria, unspecified",infection,WHO ICD-10 2019
+N39.3,N39,Stress incontinence,infection,WHO ICD-10 2019
+N39.4,N39,Other specified urinary incontinence,infection,WHO ICD-10 2019
+N39.8,N39,Other specified disorders of urinary system,infection,WHO ICD-10 2019
+N39.9,N39,"Disorder of urinary system, unspecified",infection,WHO ICD-10 2019
+O14.0,O14,Mild to moderate pre-eclampsia,obstetric,WHO ICD-10 2019
+O14.1,O14,Severe pre-eclampsia,obstetric,WHO ICD-10 2019
+O14.2,O14,HELLP syndrome,obstetric,WHO ICD-10 2019
+O14.9,O14,"Pre-eclampsia, unspecified",obstetric,WHO ICD-10 2019
+O24.0,O24,"Diabetes mellitus in pregnancy: Pre-existing diabetes mellitus, insulin-dependent",obstetric,WHO ICD-10 2019
+O24.1,O24,"Diabetes mellitus in pregnancy: Pre-existing diabetes mellitus, non-insulin-dependent",obstetric,WHO ICD-10 2019
+O24.2,O24,Diabetes mellitus in pregnancy: Pre-existing malnutrition-related diabetes mellitus,obstetric,WHO ICD-10 2019
+O24.3,O24,"Diabetes mellitus in pregnancy: Pre-existing diabetes mellitus, unspecified",obstetric,WHO ICD-10 2019
+O24.4,O24,Diabetes mellitus arising in pregnancy,obstetric,WHO ICD-10 2019
+O24.9,O24,"Diabetes mellitus in pregnancy, unspecified",obstetric,WHO ICD-10 2019
+O80.0,O80,Spontaneous vertex delivery,obstetric,WHO ICD-10 2019
+O80.1,O80,Spontaneous breech delivery,obstetric,WHO ICD-10 2019
+O80.8,O80,Other single spontaneous delivery,obstetric,WHO ICD-10 2019
+O80.9,O80,"Single spontaneous delivery, unspecified",obstetric,WHO ICD-10 2019
+O82.0,O82,Delivery by elective caesarean section,obstetric,WHO ICD-10 2019
+O82.1,O82,Delivery by emergency caesarean section,obstetric,WHO ICD-10 2019
+O82.2,O82,Delivery by caesarean hysterectomy,obstetric,WHO ICD-10 2019
+O82.8,O82,Other single delivery by caesarean section,obstetric,WHO ICD-10 2019
+O82.9,O82,"Delivery by caesarean section, unspecified",obstetric,WHO ICD-10 2019
+S72.0,S72,Fracture of neck of femur,injury,WHO ICD-10 2019
+S72.1,S72,Pertrochanteric fracture,injury,WHO ICD-10 2019
+S72.2,S72,Subtrochanteric fracture,injury,WHO ICD-10 2019
+S72.3,S72,Fracture of shaft of femur,injury,WHO ICD-10 2019
+S72.4,S72,Fracture of lower end of femur,injury,WHO ICD-10 2019
+S72.7,S72,Multiple fractures of femur,injury,WHO ICD-10 2019
+S72.8,S72,Fractures of other parts of femur,injury,WHO ICD-10 2019
+S72.9,S72,"Fracture of femur, part unspecified",injury,WHO ICD-10 2019
