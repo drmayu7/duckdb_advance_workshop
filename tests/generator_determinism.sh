@@ -18,9 +18,20 @@ $(for m in 01 02 03 04 05 06 07 08 09 10 11 12; do
     printf 'data/raw/2018-%s.csv\ndata/raw/2019-%s.json\ndata/raw/2020-%s.parquet\n' "$m" "$m" "$m"
   done)"
 
+# A run takes about 2 s. A slow one is a regression the other checks can't see
+# (and the pre-commit hook pays for it twice): usually a non-equi join or a
+# correlated NOT IN. Find the statement with `.timer on` in the generator SQL.
+max_seconds=20
 for run in a b; do
+  start=$SECONDS
   if ! OUT_DIR="$tmp/$run" "$root/build.sh" data >"$tmp/$run.log" 2>&1; then
     echo "FAIL: build.sh data (run $run) exited non-zero:"; sed 's/^/  /' "$tmp/$run.log"; exit 1
+  fi
+  took=$((SECONDS - start))
+  if [ "$took" -gt "$max_seconds" ]; then
+    echo "FAIL: build.sh data (run $run) took ${took}s, over ${max_seconds}s: profile the generator with .timer on"; fail=1
+  else
+    echo "ok: build.sh data (run $run) took ${took}s"
   fi
 done
 

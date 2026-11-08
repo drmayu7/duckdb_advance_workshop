@@ -1,11 +1,7 @@
 #!/usr/bin/env bash
-# Module 2 cards (#24), beyond what every card is checked for:
-#  * C6's "Start here" cell is C5's macros exactly as C5's solution writes them,
-#    and C6's solution creates them too, so C6 works after C5's Checkpoint;
-#  * the Self-checks count copies (EXCEPT ALL; a plain EXCEPT compares sets):
-#    C6's catches a duplicate the Participant forgot to remove, and the earlier
-#    tables that keep the AD01 re-exports (C1, C3, C4) catch an answer that
-#    dropped them with DISTINCT.
+# Module 2 cards (#24), beyond what every card is checked for: C6's "Start
+# here" cell is C5's macros exactly as C5's solution writes them, and C6's
+# solution creates them too, so C6 works after C5's Checkpoint.
 set -u
 root="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$root" || exit 1
@@ -38,22 +34,4 @@ else
   else bad "solutions/c06-dedupe.sql does not create: $missing"; fi
 fi
 
-# A kept duplicate: the expected result plus one copy of one of its rows.
-count_cell="$(card_block "$c6" self-check | sql_cell 1)"
-n="$("$DUCKDB" -list -noheader "$tmp/work.duckdb" -c "
-  CREATE TABLE admission_clean AS FROM 'expected/admission_clean.parquet';
-  INSERT INTO admission_clean SELECT * FROM admission_clean LIMIT 1;
-  $count_cell" 2>&1)"
-if [ "$n" = 1 ]; then ok "$c6: Self-check counts a kept duplicate as 1 row differing"
-else bad "$c6: Self-check with one kept duplicate gave '$n', want 1"; fi
-
-for card in cards/c01-read-csv.md cards/c03-combine.md cards/c04-fix-types.md; do
-  table="$(card_field "$card" output)"
-  count_cell="$(card_block "$card" self-check | sql_cell 1)"
-  n="$("$DUCKDB" -list -noheader "$tmp/work.duckdb" -c "
-    CREATE OR REPLACE TABLE $table AS SELECT DISTINCT * FROM 'expected/$table.parquet';
-    $count_cell" 2>&1)"
-  if [ "$n" -gt 0 ] 2>/dev/null; then ok "$card: Self-check catches the re-exported copies dropped by DISTINCT ($n rows differ)"
-  else bad "$card: Self-check on a DISTINCT answer gave '$n', want more than 0"; fi
-done
 exit $fail

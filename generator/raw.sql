@@ -11,6 +11,10 @@
 -- record number in it, the column as the file names it, the defect code, the
 -- value in the file and the value a correct cleaning gives (NULL where the
 -- information is not there). A cell gets at most one defect.
+--
+-- Defect codes, with example values: the defect table in
+-- docs/research/myhdw-like-data-sources.md. Which Challenge teaches each code,
+-- and which are dropped: the resolution comment on issue #7.
 
 -- ------------------------------------------------------------- raw records
 -- rx holds every value as the text the source system writes; the new system's

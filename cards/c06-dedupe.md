@@ -106,7 +106,7 @@ ORDER BY n DESC;
 
 ## Self-check
 
-Run this cell. **`0`** means you're done. This Self-check uses `EXCEPT ALL`, which counts every copy of a row, so a table that still has duplicates doesn't pass.
+Run this cell. **`0`** means you're done. `EXCEPT ALL` counts every copy of a row, so a missing or extra copy shows too.
 
 <!-- begin self-check -->
 ```sql

@@ -2,8 +2,8 @@
 # The solution chain (#16 Seam 1): from a fresh Work database at a bundle root,
 # run each Challenge's solution in chain order, then the card's own Self-check
 # cells. 0 rows differ means a Participant with the right answer sees "done".
-# The Self-check must also catch a wrong answer, and the card's Checkpoint must
-# bring it back to 0. Finally, the committed expected/ is what `build.sh expected`
+# The Self-check must also catch a wrong answer (a missing, changed or extra
+# row), and the card's Checkpoint must bring it back to 0. Finally, the committed expected/ is what `build.sh expected`
 # writes today.
 set -u
 root="$(cd "$(dirname "$0")/.." && pwd)"
@@ -59,6 +59,13 @@ while read -r card <&3; do
   sql "$checkpoint" >/dev/null
   n="$(sql "$count_cell")"
   if [ "$n" = 0 ]; then ok "$base: Checkpoint brings the Self-check back to 0"; else bad "$base: Self-check after the Checkpoint gave '$n', want 0"; fi
+
+  # A kept or extra copy of a row is a wrong answer too, so the Self-check
+  # compares copies (EXCEPT ALL), not sets. Then the Checkpoint again.
+  sql "INSERT INTO $table SELECT * FROM $table LIMIT 1;" >/dev/null
+  n="$(sql "$count_cell")"
+  if [ "$n" = 1 ]; then ok "$base: Self-check counts an extra copy of a row as 1 row differing"; else bad "$base: Self-check with an extra copy of a row gave '$n', want 1"; fi
+  sql "$checkpoint" >/dev/null
 done 3< <(challenge_cards)
 
 # Catching up: a Participant who loaded every earlier Checkpoint, in a fresh
