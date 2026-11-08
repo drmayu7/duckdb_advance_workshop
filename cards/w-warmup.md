@@ -62,16 +62,16 @@ SELECT * FROM 'data/warmup/patient_2017.parquet';
 
 ## Self-check
 
-Run this cell. **`0`** means you're done.
+Run this cell. **`0`** means you're done. `EXCEPT ALL` counts every copy of a row, so a missing or extra copy shows too.
 
 <!-- begin self-check -->
 ```sql
 SELECT count(*) AS rows_differ
 FROM ((SELECT * FROM warmup_state_summary
-       EXCEPT SELECT * FROM 'expected/warmup_state_summary.parquet')
+       EXCEPT ALL SELECT * FROM 'expected/warmup_state_summary.parquet')
       UNION ALL
       (SELECT * FROM 'expected/warmup_state_summary.parquet'
-       EXCEPT SELECT * FROM warmup_state_summary));
+       EXCEPT ALL SELECT * FROM warmup_state_summary));
 ```
 
 Anything else? This cell shows the differing rows: `yours` rows are in your table but not the expected one, `expected` rows the other way round.
@@ -79,10 +79,10 @@ Anything else? This cell shows the differing rows: `yours` rows are in your tabl
 ```sql
 SELECT * FROM (
   (SELECT 'yours' AS side, * FROM (SELECT * FROM warmup_state_summary
-                                   EXCEPT SELECT * FROM 'expected/warmup_state_summary.parquet'))
+                                   EXCEPT ALL SELECT * FROM 'expected/warmup_state_summary.parquet'))
   UNION ALL
   (SELECT 'expected' AS side, * FROM (SELECT * FROM 'expected/warmup_state_summary.parquet'
-                                      EXCEPT SELECT * FROM warmup_state_summary)))
+                                      EXCEPT ALL SELECT * FROM warmup_state_summary)))
 ORDER BY state, side;
 ```
 <!-- end self-check -->

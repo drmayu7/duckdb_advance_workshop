@@ -42,12 +42,32 @@ SELECT assert_eq('Answer key columns',
 SELECT assert_eq('every cell defect points at a real file, record and column', count(*), 0)
 FROM answer_key k ANTI JOIN cells c
   ON c.filename = k.file AND c.row_no = k.row_no AND c.column_name = k.column_name
-WHERE k.row_no IS NOT NULL;
+WHERE k.row_no IS NOT NULL AND k.column_name IS NOT NULL;
+
+-- AD01 and AD02 are about a whole record: it has no column, and no clean value
+-- (a correct cleaning drops it).
+SELECT assert_eq('only AD01 and AD02 are whole-record defects', count(*), 0)
+FROM answer_key WHERE row_no IS NOT NULL AND (column_name IS NULL) <> (defect_code IN ('AD01', 'AD02'));
+
+SELECT assert_eq('every record defect points at a real record and has no clean value', count(*), 0)
+FROM answer_key k
+WHERE k.defect_code IN ('AD01', 'AD02')
+  AND (k.clean_value IS NOT NULL
+       OR NOT EXISTS (SELECT 1 FROM cells c WHERE c.filename = k.file AND c.row_no = k.row_no));
+
+-- AD01: the record is an exact copy of another record of its file, which its dirty_value names.
+SELECT assert_eq('every AD01 record is an exact copy of the record it names', count(*), 0)
+FROM answer_key k
+WHERE k.defect_code = 'AD01'
+  AND (SELECT list(value ORDER BY column_name) FROM cells c WHERE c.filename = k.file AND c.row_no = k.row_no)
+      IS DISTINCT FROM
+      (SELECT list(value ORDER BY column_name) FROM cells c
+       WHERE c.filename = k.file AND c.row_no = regexp_extract(k.dirty_value, '(\d+)$', 1)::BIGINT);
 
 SELECT assert_eq('the value in the file at each cell defect is its dirty_value', count(*), 0)
 FROM answer_key k JOIN cells c
   ON c.filename = k.file AND c.row_no = k.row_no AND c.column_name = k.column_name
-WHERE c.value IS DISTINCT FROM k.dirty_value;
+WHERE c.value IS DISTINCT FROM k.dirty_value AND k.column_name IS NOT NULL;
 
 SELECT assert_eq('a cell carries at most one defect', count(*), 0)
 FROM (SELECT file, row_no, column_name FROM answer_key WHERE row_no IS NOT NULL GROUP BY ALL HAVING count(*) > 1);
@@ -69,9 +89,9 @@ WHERE k.defect_code = 'SD01';
 SELECT assert_eq('only SD01 rows are whole-file defects', count(*), 0)
 FROM answer_key WHERE (row_no IS NULL) <> (defect_code = 'SD01');
 
--- The defects decided for 2018–2020 so far (#23); later tickets add theirs.
+-- The defects decided for 2018–2020 so far (#23, #24); later tickets add theirs.
 SELECT assert_eq('2018-2020 defect codes', string_agg(DISTINCT defect_code, ',' ORDER BY defect_code),
-                 'DT05,GE03,GE04,ID02,NU02,SD01,TX01')
+                 'AD01,AD02,DT01,DT03,DT04,DT05,DT06,DX01,GE01,GE03,GE04,ID01,ID02,ID03,ID04,NU02,PT01,SD01,TX01')
 FROM answer_key WHERE file LIKE 'data/raw/20%';
 
 SELECT assert_eq('C1 defects (GE04, ID02, GE03) are in the old HIS CSVs only', count(*), 0)
@@ -83,3 +103,22 @@ FROM (SELECT DISTINCT defect_code, regexp_extract(file, '\.(\w+)$', 1) FROM answ
 
 SELECT assert_eq('every 2018 file breaks a plain read (GE04 unescaped quotes)', count(*), 12)
 FROM (SELECT DISTINCT file FROM answer_key WHERE defect_code = 'GE04' AND dirty_value LIKE '%"%');
+
+SELECT assert_eq('DT01, DT03 and DT04 are in the text-date systems only (CSV, JSON)', count(*), 0)
+FROM answer_key WHERE defect_code IN ('DT01', 'DT03', 'DT04') AND file LIKE '%.parquet';
+
+SELECT assert_eq('DT04 (two-digit years) is in old HIS birth dates only', count(*), 0)
+FROM answer_key WHERE defect_code = 'DT04' AND NOT (file LIKE '%.csv' AND column_name = 'tarikh_lahir');
+
+SELECT assert_eq('DT06, GE01, DX01, ID01, ID03, ID04, PT01, AD01, AD02 are in all three source systems', count(*), 27)
+FROM (SELECT DISTINCT defect_code, regexp_extract(file, '\.(\w+)$', 1) FROM answer_key
+      WHERE defect_code IN ('DT06', 'GE01', 'DX01', 'ID01', 'ID03', 'ID04', 'PT01', 'AD01', 'AD02'));
+
+-- ADR 0003: an IC defect never makes another patient's IC, and keeps the 9### serial.
+SELECT assert_eq('no ID03/ID04 dirty IC is a real patient''s IC', count(*), 0)
+FROM answer_key k JOIN 'generator/truth/patient.parquet' p ON p.mykad = k.dirty_value
+WHERE k.defect_code IN ('ID03', 'ID04');
+
+SELECT assert_eq('ID01, ID03, ID04 dirty ICs keep the 9### serial', count(*), 0)
+FROM answer_key WHERE defect_code IN ('ID01', 'ID03', 'ID04')
+  AND NOT regexp_full_match(regexp_replace(dirty_value, '[^0-9]', '', 'g'), '\d{8}9\d{3}');

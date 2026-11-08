@@ -49,7 +49,8 @@ while read -r card <&3; do
   n="$(card_block "$card" self-check | sql_cell | grep -c "'$expected'")"
   if [ "$n" -ge 4 ]; then ok "$card: Self-check compares both ways against $expected"; else bad "$card: Self-check should name '$expected' in both queries, both ways"; fi
 
-  # The example row: its header is the output columns in order, and it is a real row.
+  # The example row: its header is the output columns in order, and it is a real
+  # row. A cell written NULL matches a NULL value.
   table="$(card_block "$card" example-row | grep -E '^\|')"
   header="$(sed -n 1p <<<"$table" | tr -d ' ' | sed -E 's/^\||\|$//g; s/`//g; s/\|/,/g')"
   row="$(sed -n 3p <<<"$table")"
@@ -58,7 +59,8 @@ while read -r card <&3; do
     if [ "$header" = "$cols" ]; then ok "$card: example row lists the output columns in order"; else bad "$card: example row columns '$header' are not the output columns '$cols'"; fi
     where="$(awk -F'|' -v cols="$header" 'BEGIN { n = split(cols, c, ",") }
       { for (i = 1; i <= n; i++) { v = $(i + 1); gsub(/^ +| +$|`/, "", v); gsub(/'\''/, "'\'''\''", v)
-          printf "%s%s::VARCHAR = '\''%s'\''", (i > 1 ? " AND " : ""), c[i], v } }' <<<"$row")"
+          printf "%s", (i > 1 ? " AND " : "")
+          if (v == "NULL") printf "%s IS NULL", c[i]; else printf "%s::VARCHAR = '\''%s'\''", c[i], v } }' <<<"$row")"
     hits="$("$DUCKDB" -csv -noheader :memory: -c "SELECT count(*) FROM '$expected' WHERE $where;" 2>&1)"
     if [ "$hits" = 1 ]; then ok "$card: example row is a row of $expected"; else bad "$card: example row is not in $expected ($hits): $row"; fi
   fi

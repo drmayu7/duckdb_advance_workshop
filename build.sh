@@ -13,7 +13,9 @@ usage() {
 Usage: ./build.sh <target>
 
 Targets:
-  test        Run every check in tests/ and report pass/fail
+  test [name...]
+              Run every check in tests/ and report pass/fail, or only the
+              named ones (e.g. ./build.sh test answer_key solution_chain.sh)
   data        Generate the clean truth (generator/truth/), the Warm-up
               extract (data/warmup/), the 2018-2020 Raw extract (data/raw/)
               and its Answer key (generator/dq_answer_key.parquet) from
@@ -45,15 +47,30 @@ require_duckdb() {
   fi
 }
 
-# test: every tests/*.sql runs in a fresh in-memory DuckDB from the repo root,
-# after tests/lib/assert.sql; it passes if DuckDB exits 0. Every tests/*.sh
-# runs with DUCKDB exported; it passes if it exits 0. Later tickets add files.
+# test [name...]: every tests/*.sql (or only the named ones) runs in a fresh
+# in-memory DuckDB from the repo root, after tests/lib/assert.sql; it passes if
+# DuckDB exits 0. Every tests/*.sh runs with DUCKDB exported; it passes if it
+# exits 0. Later tickets add files.
 run_tests() {
-  local log passed=0 failed=0 t name
+  local log passed=0 failed=0 t name want
   log="$(mktemp)"
   trap 'rm -f "$log"' RETURN
 
-  for t in tests/*.sql tests/*.sh; do
+  local -a picked=()
+  if [ "$#" -eq 0 ]; then
+    picked=(tests/*.sql tests/*.sh)
+  else
+    # A name may leave out tests/ and the extension; it must match one file.
+    for want in "$@"; do
+      want="${want#tests/}"
+      for t in "tests/$want" "tests/$want.sql" "tests/$want.sh"; do
+        [ -f "$t" ] && { picked+=("$t"); continue 2; }
+      done
+      echo "build.sh: no test named '$want' in tests/" >&2; return 2
+    done
+  fi
+
+  for t in "${picked[@]}"; do
     [ -e "$t" ] || continue
     name="${t#tests/}"
     if case "$t" in
@@ -155,7 +172,7 @@ build_email() {
 require_duckdb
 
 case "${1:-help}" in
-  test)      run_tests ;;
+  test)      shift; run_tests "$@" ;;
   data)      build_data ;;
   expected)  build_expected ;;
   open-data) bash tools/fetch_open_data.sh ;;

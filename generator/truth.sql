@@ -140,7 +140,10 @@ FROM p0 ASOF JOIN ref_state s ON p0.u_state >= s.lo;
 
 CREATE TABLE p2 AS
 SELECT p1.*, d.district,
-       DATE '2017-07-01' - floor(age * 365.25 + u(patient_id, 'dob') * 365)::INTEGER AS dob,
+       -- C4 reads 1970-01-01 as a placeholder (DT05), so nobody is born on it.
+       CASE WHEN DATE '2017-07-01' - floor(age * 365.25 + u(patient_id, 'dob') * 365)::INTEGER = DATE '1970-01-01'
+            THEN DATE '1970-01-02'
+            ELSE DATE '2017-07-01' - floor(age * 365.25 + u(patient_id, 'dob') * 365)::INTEGER END AS dob,
        pick(d.postcodes, u(patient_id, 'postcode')) AS postcode,
        CASE WHEN u(patient_id, 'born_here') < 0.85 THEN p1.state
             ELSE pick((SELECT list(state ORDER BY state) FROM ref_pb), u(patient_id, 'born_state')) END AS birth_state
