@@ -49,13 +49,26 @@ The Malaysian Health Data Warehouse, the real national system that Participants 
 The synthetic dataset built for the workshop. It mirrors the shape of MyHDW data (patients, admissions, diagnoses, facilities, states) and contains no real patient records. It may be combined with Malaysian open data for realism.
 _Avoid_: MyHDW data (when referring to workshop data)
 
+## Raw extract
+
+The messy admission export from the Scenario's hospital systems that Participants start from: one row per admission, spread over monthly files from three source systems, with deliberately injected data-quality problems. The Capstone gets a separate raw extract for a later year.
+_Avoid_: raw data, dump
+
+## Answer key
+
+The facilitator's record of every data-quality problem injected into the raw extract: where it is, what kind it is and what the clean value should be. It is how the facilitator knows a Participant's cleaning found everything.
+
 ## Offline bundle
 
 The workshop data and DuckDB extensions packaged in advance and given to Participants on a USB drive or by download, so the hands-on sessions do not depend on the venue's internet connection.
 
 ## Scenario
 
-The single running health story that every Challenge and the Capstone are set in, so each Module builds on the previous one instead of starting from unrelated examples.
+The single running health story that every Challenge and the Capstone are set in, so each Module builds on the previous one instead of starting from unrelated examples. Participants play an analytics team at a health informatics centre, asked by a Director to produce the State Health Brief.
+
+## State Health Brief
+
+The report the Scenario works towards. It answers three questions for 2018–2021: 30-day readmission among diabetes patients by state; dengue admissions per 100,000 people by state and district; and which hospitals carry the admission load. The Challenges build its parts, and each Capstone team delivers a version of it.
 
 ## Challenge
 
