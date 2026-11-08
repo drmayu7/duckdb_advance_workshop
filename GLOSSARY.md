@@ -35,6 +35,26 @@ _Avoid_: rotation, station (these imply parallel floor helpers, which Series 2 d
 
 The team project in which Participants build an end-to-end pipeline, from raw MyHDW-like data to health insights using DuckDB SQL, and then present it for peer review.
 
+## Angle
+
+The one question of the State Health Brief that a Capstone team answers: diabetes readmission, dengue, or hospital load. Each of the three teams is assigned a different Angle.
+
+## Held-back defect
+
+A data-quality problem that appears only in the Capstone's raw extract and is taught by no Challenge. Each one gives a wrong number rather than an error, and each Angle has one that visibly moves its numbers. Finding and fixing it is the data-quality story a team presents.
+
+## Hint card
+
+A facilitator-held card that describes the symptom of a Held-back defect, not its cause or fix. It is given to a Capstone team that has not yet found its defect by a set time.
+
+## Driver
+
+The Capstone team member whose laptop holds the team's official pipeline and outputs. The other members investigate on their own laptops and pass their fixes to the Driver.
+
+## Take-home notebook
+
+An optional Python or R notebook that a Participant works through after the workshop. It picks up the State Health Brief where the SQL pipeline ends, from the Checkpoints, and shows what each language adds. It is not taught live: the Programme gives it one overview slide.
+
 ## Participant
 
 A workshop attendee from a KKM health informatics centre: doctors, statisticians, MOH IT staff and medical record officers working on the Malaysian Health Data Warehouse (MyHDW) project.
@@ -61,6 +81,25 @@ The facilitator's record of every data-quality problem injected into the raw ext
 ## Offline bundle
 
 The workshop data and DuckDB extensions packaged in advance and given to Participants on a USB drive or by download, so the hands-on sessions do not depend on the venue's internet connection.
+
+## Setup release
+
+The first part of the Offline bundle, sent with the pre-workshop email before any Challenge material is ready. It holds what a Participant needs to prove their laptop works (DuckDB, its extensions, the launcher, the setup checks and the open data), but no Challenges. The Challenge content reaches Participants later, as updates to the same folder.
+_Avoid_: bundle (when only this part is meant)
+
+## Content release
+
+An update to the Offline bundle that carries the Challenge material: cards, data, expected results, solutions and whatever handouts exist. Each one is complete in itself: it holds all content released so far, so a Participant only ever needs the latest. It lays over the Participant's existing bundle folder and never touches their Work database. Each Content release has its own id, which the setup check reports.
+_Avoid_: day pack, patch (a Content release isn't limited to one day, and it isn't a diff)
+
+## Setup check
+
+The opening 20 minutes of Day 1, in which every Participant confirms that DuckDB, the DuckDB UI and the workshop data work on their own laptop, ending with a first query in the DuckDB UI. Installing is meant to happen at home before the workshop; the setup check confirms it on the venue network.
+_Avoid_: install session
+
+## Fix sheet
+
+The table that maps each way the setup check can fail to what the Participant tries first and the next fallback if that does not work.
 
 ## Scenario
 
