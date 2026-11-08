@@ -59,3 +59,12 @@ Optional extra parts of a Challenge for Participants who finish the Core tier ea
 ## Self-check
 
 A way for a Participant to confirm their own Challenge answer is correct without the facilitator, essential because Series 2 has one facilitator and no floor helpers.
+It compares the Participant's result with the Challenge's expected result: an exact match means done.
+
+## Checkpoint
+
+The expected result of a Challenge, which a Participant who didn't finish loads in place of their own answer, so that later Challenges in the Scenario still work. The same expected result is what the Self-check compares against.
+
+## Reveal
+
+The facilitator's walkthrough of a Challenge's solution after the time box ends. The solution is in the repo from the start, kept apart from the Challenge so Participants can choose not to see it early.
