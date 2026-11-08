@@ -6,6 +6,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 DUCKDB="${DUCKDB:-duckdb}"
 REQUIRED_DUCKDB="v1.5.6"
+export DUCKDB
 
 usage() {
   cat <<EOF
@@ -37,7 +38,7 @@ run_tests() {
   local log passed=0 failed=0 t name
   log="$(mktemp)"
   trap 'rm -f "$log"' RETURN
-  export DUCKDB
+
   for t in tests/*.sql tests/*.sh; do
     [ -e "$t" ] || continue
     name="${t#tests/}"
@@ -66,7 +67,7 @@ require_duckdb
 
 case "${1:-help}" in
   test)      run_tests ;;
-  open-data) DUCKDB="$DUCKDB" bash tools/fetch_open_data.sh ;;
+  open-data) bash tools/fetch_open_data.sh ;;
   help|-h|--help) usage ;;
   *) echo "build.sh: unknown target '$1'" >&2; usage >&2; exit 2 ;;
 esac
