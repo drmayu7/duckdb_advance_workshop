@@ -2,8 +2,10 @@
 # Module 2 cards (#24), beyond what every card is checked for:
 #  * C6's "Start here" cell is C5's macros exactly as C5's solution writes them,
 #    and C6's solution creates them too, so C6 works after C5's Checkpoint;
-#  * C6's Self-check catches a duplicate the Participant forgot to remove (a
-#    plain EXCEPT would not: it compares sets).
+#  * the Self-checks count copies (EXCEPT ALL; a plain EXCEPT compares sets):
+#    C6's catches a duplicate the Participant forgot to remove, and the earlier
+#    tables that keep the AD01 re-exports (C1, C3, C4) catch an answer that
+#    dropped them with DISTINCT.
 set -u
 root="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$root" || exit 1
@@ -44,4 +46,14 @@ n="$("$DUCKDB" -list -noheader "$tmp/work.duckdb" -c "
   $count_cell" 2>&1)"
 if [ "$n" = 1 ]; then ok "$c6: Self-check counts a kept duplicate as 1 row differing"
 else bad "$c6: Self-check with one kept duplicate gave '$n', want 1"; fi
+
+for card in cards/c01-read-csv.md cards/c03-combine.md cards/c04-fix-types.md; do
+  table="$(card_field "$card" output)"
+  count_cell="$(card_block "$card" self-check | sql_cell 1)"
+  n="$("$DUCKDB" -list -noheader "$tmp/work.duckdb" -c "
+    CREATE OR REPLACE TABLE $table AS SELECT DISTINCT * FROM 'expected/$table.parquet';
+    $count_cell" 2>&1)"
+  if [ "$n" -gt 0 ] 2>/dev/null; then ok "$card: Self-check catches the re-exported copies dropped by DISTINCT ($n rows differ)"
+  else bad "$card: Self-check on a DISTINCT answer gave '$n', want more than 0"; fi
+done
 exit $fail

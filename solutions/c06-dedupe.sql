@@ -51,8 +51,8 @@ LIMIT 10;
 -- norm_mykad: digits only; 9 to 11 digits lost their leading zeros when the IC
 -- was stored as a number (ID02, C1: someone born in 2000 loses two or three),
 -- so pad to 12, then write YYMMDD-PB-####. Anything else is not a MyKad
--- number: NULL. It
--- does not look at the serial's first digit, so the workshop's 9### ICs pass.
+-- number: NULL. It does not look at the serial's first digit, so the
+-- workshop's 9### ICs pass.
 CREATE OR REPLACE MACRO mykad_digits(ic) AS regexp_replace(ic, '[^0-9]', '', 'g');
 CREATE OR REPLACE MACRO norm_mykad(ic) AS
   CASE WHEN length(mykad_digits(ic)) BETWEEN 9 AND 12

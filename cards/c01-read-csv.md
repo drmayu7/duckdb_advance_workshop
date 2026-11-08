@@ -83,16 +83,16 @@ SELECT error_type, count(*) AS lines FROM rejects_2018 GROUP BY error_type;
 
 ## Self-check
 
-Run this cell. **`0`** means you're done.
+Run this cell. **`0`** means you're done. `EXCEPT ALL` counts every copy of a row, so a missing or extra copy shows too.
 
 <!-- begin self-check -->
 ```sql
 SELECT count(*) AS rows_differ
 FROM ((SELECT * FROM raw_2018
-       EXCEPT SELECT * FROM 'expected/raw_2018.parquet')
+       EXCEPT ALL SELECT * FROM 'expected/raw_2018.parquet')
       UNION ALL
       (SELECT * FROM 'expected/raw_2018.parquet'
-       EXCEPT SELECT * FROM raw_2018));
+       EXCEPT ALL SELECT * FROM raw_2018));
 ```
 
 Anything else? This cell shows the differing rows: `yours` rows are in your table but not the expected one, `expected` rows the other way round.
@@ -100,10 +100,10 @@ Anything else? This cell shows the differing rows: `yours` rows are in your tabl
 ```sql
 SELECT * FROM (
   (SELECT 'yours' AS side, * FROM (SELECT * FROM raw_2018
-                                   EXCEPT SELECT * FROM 'expected/raw_2018.parquet'))
+                                   EXCEPT ALL SELECT * FROM 'expected/raw_2018.parquet'))
   UNION ALL
   (SELECT 'expected' AS side, * FROM (SELECT * FROM 'expected/raw_2018.parquet'
-                                      EXCEPT SELECT * FROM raw_2018)))
+                                      EXCEPT ALL SELECT * FROM raw_2018)))
 ORDER BY file, no_mrn, tarikh_masuk, side
 LIMIT 50;
 ```

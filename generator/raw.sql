@@ -186,8 +186,6 @@ SELECT rx.rid, a.admit_ts, a.discharge_ts, p.dob, p.mykad, p.sex
 FROM rx JOIN admission a USING (admission_id) JOIN patient p USING (patient_id);
 
 -- A date or timestamp as each source system writes it.
-CREATE MACRO fmt_date(sys, d) AS
-  CASE sys WHEN 'old_his' THEN strftime(d, '%d/%m/%Y') ELSE strftime(d, '%Y-%m-%d') END;
 CREATE MACRO fmt_ts(sys, t) AS
   CASE sys WHEN 'old_his' THEN strftime(t, '%d/%m/%Y') WHEN 'interim' THEN strftime(t, '%Y-%m-%d')
            ELSE strftime(t, '%Y-%m-%d %H:%M:%S') END;
@@ -284,7 +282,7 @@ SELECT rid, file, 'principal_dx' AS col,
             THEN pick([replace(principal_dx, '.', ''), lower(principal_dx), principal_dx || ' ', principal_dx || '0'], u(rid, 'dx01v'))
             ELSE pick([lower(principal_dx), principal_dx || ' '], u(rid, 'dx01v')) END AS dirty,
        principal_dx AS clean
-FROM rx WHERE u(rid, 'dx01') < 0.04;
+FROM rx WHERE u(rid, 'dx01') < 0.04 AND free(rid, 'principal_dx');
 INSERT INTO dq SELECT rid, file, col, 'DX01', dirty, clean FROM hit;
 UPDATE rx SET principal_dx = hit.dirty FROM hit WHERE rx.rid = hit.rid;
 DROP TABLE hit;
