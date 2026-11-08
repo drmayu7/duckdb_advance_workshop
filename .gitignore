@@ -12,3 +12,7 @@ __pycache__/
 
 # Claude Code agent worktrees
 .claude/worktrees/
+
+# Downloads for the Setup release, and built releases
+.cache/
+dist/

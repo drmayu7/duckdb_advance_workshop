@@ -15,6 +15,9 @@ Usage: ./build.sh <target>
 Targets:
   test        Run every check in tests/ and report pass/fail
   open-data   Re-download the frozen open data into data/open/ (needs network)
+  setup       Build the Setup release dist/duckdb-bundle-YYYYMMDD.zip
+              (first run needs network to fill .cache/setup/; DIST_DIR and
+              BUNDLE_DATE override the folder and the date)
   help        Show this message
 
 Once per clone, run tests before every commit: git config core.hooksPath .githooks
@@ -65,11 +68,39 @@ run_tests() {
   fi
 }
 
+# setup: the Setup release (#14, #18). Paths inside the zip start at the bundle
+# root, so a Participant extracts it straight into duckdb-bundle/.
+build_setup() {
+  local dist="${DIST_DIR:-dist}" date="${BUNDLE_DATE:-$(date +%Y%m%d)}" stage zip
+  bash tools/fetch_setup_deps.sh
+  stage="$(mktemp -d)"
+  trap 'rm -rf "$stage"' RETURN
+
+  mkdir -p "$stage/bin" "$stage/data" "$stage/updates"
+  cp -R .cache/setup/bin/. "$stage/bin/"
+  cp -R .cache/setup/repo "$stage/repo"
+  cp -R data/open "$stage/data/open"
+  cp setup/install.sql setup/smoke_test.sql setup/start-workshop.command "$stage/"
+  chmod 755 "$stage/start-workshop.command"
+  # cmd.exe misreads batch files with LF line endings; Notepad users get CRLF too.
+  crlf() { awk '{ sub(/\r$/, ""); printf "%s\r\n", $0 }' "$1" >"$2"; }
+  crlf setup/start-workshop.bat "$stage/start-workshop.bat"
+  crlf setup/README.txt "$stage/README.txt"
+  crlf setup/updates-README.txt "$stage/updates/README.txt"
+
+  mkdir -p "$dist"
+  zip="$(cd "$dist" && pwd)/duckdb-bundle-$date.zip"
+  rm -f "$zip"
+  (cd "$stage" && zip -q -r -X "$zip" . -x '*.DS_Store')
+  echo "build.sh: wrote $zip"
+}
+
 require_duckdb
 
 case "${1:-help}" in
   test)      run_tests ;;
   open-data) bash tools/fetch_open_data.sh ;;
+  setup)     build_setup ;;
   help|-h|--help) usage ;;
   *) echo "build.sh: unknown target '$1'" >&2; usage >&2; exit 2 ;;
 esac
