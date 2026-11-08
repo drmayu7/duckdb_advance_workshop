@@ -2,6 +2,17 @@
 
 > **Synthetic data, not real hospital performance.** Patients and admissions in this workshop are synthetic (generated, not real MyHDW records). They are paired with real MoH facility names, so any rate, count or ranking you compute describes the synthetic data only. Do not read clinical or hospital-performance meaning into it.
 
+## Warm-up extract (`data/warmup/`)
+
+A clean, synthetic 2017 extract for the Warm-up Challenge (`cards/w-warmup.md`). Both files are generated, not downloaded.
+
+| File | What it is |
+|---|---|
+| `admission_2017.parquet` | Every 2017 admission (about 5,000): `admission_id`, `patient_id`, `facility_code`, `facility_name`, `facility_state`, `admit_date`, `discharge_date`, `principal_dx`, `discharge_status`. The hospital's name and state come from the MoH facility list, already cleaned. |
+| `patient_2017.parquet` | One row per patient admitted in 2017: `patient_id`, `mykad`, `name`, `sex`, `dob`, `state`, `district`, `postcode`. `state` and `district` are where the patient lives, as MoH health districts. |
+
+Synthetic ICs follow the MyKad format `YYMMDD-PB-###G`, but the last four digits always start with `9`, so they are recognisably workshop data.
+
 ## Open data (`data/open/`)
 
 Real Malaysian open data, used as reference tables to join to. Every file reads directly in DuckDB 1.5.6, for example `FROM 'data/open/population_state.parquet'` or `FROM read_json('data/open/facilities.json')`.

@@ -14,6 +14,12 @@ Usage: ./build.sh <target>
 
 Targets:
   test        Run every check in tests/ and report pass/fail
+  data        Generate the clean truth (generator/truth/) and the Warm-up
+              extract (data/warmup/) from data/open/ (OUT_DIR overrides
+              the output root)
+  expected    Run every Challenge solution in chain order (w, c01..c10, t-*)
+              in one fresh Work database and write expected/<output>.parquet
+              (OUT_DIR overrides where expected/ is written)
   open-data   Re-download the frozen open data into data/open/ (needs network)
   setup       Build the Setup release dist/duckdb-bundle-YYYYMMDD.zip
               (first run needs network to fill .cache/setup/; DIST_DIR and
@@ -70,6 +76,44 @@ run_tests() {
   fi
 }
 
+# data: the generator (#21). Its SQL uses paths relative to the output root, so
+# it runs there; a root other than the repo gets data/open/ and names.csv linked in.
+build_data() {
+  local out="${OUT_DIR:-.}" repo
+  repo="$(pwd)"
+  mkdir -p "$out/generator/truth" "$out/data/warmup"
+  out="$(cd "$out" && pwd)"
+  if [ "$out" != "$repo" ]; then
+    [ -e "$out/data/open" ] || ln -s "$repo/data/open" "$out/data/open"
+    cp generator/names.csv "$out/generator/names.csv"
+  fi
+  cat generator/truth.sql generator/warmup.sql | (cd "$out" && "$DUCKDB" :memory:)
+  echo "build.sh: wrote $out/generator/truth/ and $out/data/warmup/"
+}
+
+# Challenge-card readers: challenge_cards, card_field, card_block, sql_cell.
+# shellcheck source=tools/cards.sh
+source tools/cards.sh
+
+# expected: each Challenge's expected Parquet is its canonical solution's output
+# (#5). The solutions share one Work database, so each one's input is the
+# previous one's output, as for a Participant.
+build_expected() {
+  local out="${OUT_DIR:-.}" work card base table
+  mkdir -p "$out/expected"
+  out="$(cd "$out" && pwd)"
+  work="$(mktemp -d)"
+  trap 'rm -rf "$work"' RETURN
+  while read -r card <&3; do
+    base="$(basename "$card" .md)"
+    table="$(card_field "$card" output)"
+    { echo ".bail on"; cat "solutions/$base.sql"; } | "$DUCKDB" "$work/work.duckdb" >/dev/null
+    "$DUCKDB" "$work/work.duckdb" -c \
+      "COPY (FROM $table ORDER BY ALL) TO '$out/expected/$table.parquet' (FORMAT parquet, COMPRESSION zstd);"
+    echo "build.sh: wrote $out/expected/$table.parquet"
+  done 3< <(challenge_cards)
+}
+
 # setup: the Setup release (#14, #18). Paths inside the zip start at the bundle
 # root, so a Participant extracts it straight into duckdb-bundle/.
 build_setup() {
@@ -111,6 +155,8 @@ require_duckdb
 
 case "${1:-help}" in
   test)      run_tests ;;
+  data)      build_data ;;
+  expected)  build_expected ;;
   open-data) bash tools/fetch_open_data.sh ;;
   setup)     build_setup ;;
   email)     build_email ;;
