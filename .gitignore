@@ -16,3 +16,6 @@ __pycache__/
 # Downloads for the Setup release, and built releases
 .cache/
 dist/
+
+# Playwright MCP browser session files
+.playwright-mcp/
