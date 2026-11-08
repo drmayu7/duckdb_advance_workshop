@@ -48,7 +48,7 @@ SELECT count(*) FILTER (WHERE COLUMNS(*) IS NULL) FROM raw_2018;
 <!-- begin example-row -->
 | measure | no_mrn | no_kp | nama | tarikh_lahir | jantina | negeri | daerah | poskod | alamat | kod_fasiliti | tarikh_masuk | tarikh_keluar | status_discaj | dx_utama | dx_sekunder | dikemaskini | file |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| null_spelling | 0 | 0 | 0 | 0 | 0 | 0 | 172 | 0 | 195 | 0 | 0 | 0 | 0 | 0 | 3902 | 0 | 0 |
+| null_spelling | 0 | 0 | 0 | 0 | 0 | 0 | 173 | 0 | 196 | 0 | 0 | 0 | 0 | 0 | 3932 | 0 | 0 |
 <!-- end example-row -->
 
 ## Core and Stretch

@@ -22,7 +22,7 @@ The synthetic admission export that Module 1 starts from (`cards/c01-read-csv.md
 | `2018-01.csv` … `2018-12.csv` | Old HIS | CSV with a header row and Malay column names (`no_mrn`, `no_kp`, `nama`, `tarikh_lahir`, `jantina`, `negeri`, `daerah`, `poskod`, `alamat`, `kod_fasiliti`, `tarikh_masuk`, `tarikh_keluar`, `status_discaj`, `dx_utama`, `dx_sekunder`, `dikemaskini`). Dates are `DD/MM/YYYY`. |
 | `2019-01.json` … `2019-12.json` | Interim system | Newline-delimited JSON, one object per admission, every value a string or null: `mrn`, `mykad`, `name`, `dob`, `sex`, `state`, `district`, `postcode`, `address`, `facility_code`, `admit_date`, `discharge_date`, `discharge_status`, `principal_dx`, `secondary_dx`, `updated_at`. Dates are `YYYY-MM-DD`. |
 | `2020-01.parquet` … `2020-12.parquet` | New system | Parquet with the interim system's columns, except that `dob` is a `DATE` and the admission is timed: `admit_ts` and `discharge_ts` (`TIMESTAMP`) replace `admit_date` and `discharge_date`. Two columns are new: `ward` and `admission_type`. |
-| `manifest.csv` | – | `file`, `rows`: how many admissions each file holds. A careful read of each file gives exactly this many rows. |
+| `manifest.csv` | – | `file`, `rows`: how many records each file holds. A careful read of each file gives exactly this many rows. |
 
 `state`, `district`, `postcode` and `address` are where the patient lives. `secondary_dx` lists secondary diagnoses as ICD-10 codes separated by `; `.
 

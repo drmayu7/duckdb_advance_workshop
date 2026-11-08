@@ -99,3 +99,8 @@ SELECT assert_eq('2018-2020 admissions about 75k', count(*) BETWEEN 65000 AND 85
 FROM admission WHERE year(admit_ts) BETWEEN 2018 AND 2020;
 SELECT assert_eq('2021 admissions about 25k', count(*) BETWEEN 20000 AND 32000, true)
 FROM admission WHERE year(admit_ts) = 2021;
+
+-- C4 reads 1900-01-01, 1970-01-01 and 9999-12-31 as placeholders (DT05), so no
+-- real birth date is one.
+SELECT assert_eq('no patient is born on a placeholder date', count(*), 0)
+FROM patient WHERE dob IN (DATE '1900-01-01', DATE '1970-01-01');
