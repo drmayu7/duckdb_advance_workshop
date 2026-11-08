@@ -14,9 +14,10 @@ Usage: ./build.sh <target>
 
 Targets:
   test        Run every check in tests/ and report pass/fail
-  data        Generate the clean truth (generator/truth/) and the Warm-up
-              extract (data/warmup/) from data/open/ (OUT_DIR overrides
-              the output root)
+  data        Generate the clean truth (generator/truth/), the Warm-up
+              extract (data/warmup/), the 2018-2020 Raw extract (data/raw/)
+              and its Answer key (generator/dq_answer_key.parquet) from
+              data/open/ (OUT_DIR overrides the output root)
   expected    Run every Challenge solution in chain order (w, c01..c10, t-*)
               in one fresh Work database and write expected/<output>.parquet
               (OUT_DIR overrides where expected/ is written)
@@ -81,14 +82,14 @@ run_tests() {
 build_data() {
   local out="${OUT_DIR:-.}" repo
   repo="$(pwd)"
-  mkdir -p "$out/generator/truth" "$out/data/warmup"
+  mkdir -p "$out/generator/truth" "$out/data/warmup" "$out/data/raw"
   out="$(cd "$out" && pwd)"
   if [ "$out" != "$repo" ]; then
     [ -e "$out/data/open" ] || ln -s "$repo/data/open" "$out/data/open"
     cp generator/names.csv "$out/generator/names.csv"
   fi
-  cat generator/truth.sql generator/warmup.sql | (cd "$out" && "$DUCKDB" :memory:)
-  echo "build.sh: wrote $out/generator/truth/ and $out/data/warmup/"
+  cat generator/truth.sql generator/warmup.sql generator/raw.sql | (cd "$out" && "$DUCKDB" :memory:)
+  echo "build.sh: wrote $out/generator/truth/, $out/generator/dq_answer_key.parquet, $out/data/warmup/ and $out/data/raw/"
 }
 
 # Challenge-card readers: challenge_cards, card_field, card_block, sql_cell.

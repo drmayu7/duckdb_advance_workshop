@@ -21,6 +21,7 @@ bundle="$tmp/duckdb-bundle"
 mkdir -p "$bundle/data"
 cp -R "$root/cards" "$root/solutions" "$root/expected" "$bundle/"
 cp -R "$root/data/warmup" "$bundle/data/warmup"
+cp -R "$root/data/raw" "$bundle/data/raw"
 ln -s "$root/data/open" "$bundle/data/open"
 cd "$bundle" || exit 1
 work=my_work.duckdb
@@ -42,9 +43,13 @@ while read -r card <&3; do
   if [ -z "$rows" ]; then ok "$base: Self-check lists no differing rows"; else bad "$base: Self-check listed rows: $rows"; fi
 
   # A wrong answer: one row missing and one row changed.
+  # The changed column is the first number, or else the first text column.
   num="$(sql "SELECT name FROM pragma_table_info('$table') WHERE type IN ('BIGINT', 'INTEGER', 'DOUBLE') ORDER BY cid LIMIT 1")"
+  if [ -n "$num" ]; then change="$num = $num + 1"
+  else txt="$(sql "SELECT name FROM pragma_table_info('$table') WHERE type = 'VARCHAR' ORDER BY cid LIMIT 1")"
+       change="$txt = coalesce($txt, '') || 'x'"; fi
   sql "DELETE FROM $table WHERE rowid = (SELECT min(rowid) FROM $table);
-       UPDATE $table SET $num = $num + 1 WHERE rowid = (SELECT max(rowid) FROM $table);" >/dev/null
+       UPDATE $table SET $change WHERE rowid = (SELECT max(rowid) FROM $table);" >/dev/null
   n="$(sql "$count_cell")"
   if [ "$n" = 3 ]; then ok "$base: Self-check counts 3 rows differ for a missing row and a changed row"; else bad "$base: Self-check on a wrong answer gave '$n', want 3"; fi
   rows="$(sql "$rows_cell" | cut -d'|' -f1 | sort | uniq -c | awk '{ printf "%s %s;", $1, $2 }')"
@@ -54,6 +59,26 @@ while read -r card <&3; do
   sql "$checkpoint" >/dev/null
   n="$(sql "$count_cell")"
   if [ "$n" = 0 ]; then ok "$base: Checkpoint brings the Self-check back to 0"; else bad "$base: Self-check after the Checkpoint gave '$n', want 0"; fi
+done 3< <(challenge_cards)
+
+# Catching up: a Participant who loaded every earlier Checkpoint, in a fresh
+# Work database, runs the next solution and also sees 0 rows differ.
+checkpoints=""
+while read -r card <&3; do
+  base="$(basename "$card" .md)"
+  count_cell="$(card_block "$card" self-check | sql_cell 1)"
+  if [ -n "$checkpoints" ]; then
+    rm -f catchup.duckdb
+    if ! out="$( { echo .bail on; echo "$checkpoints"; cat "solutions/$base.sql"; } | "$DUCKDB" catchup.duckdb 2>&1 >/dev/null)"; then
+      bad "$base: solution failed after only the earlier Checkpoints: $out"
+    else
+      n="$("$DUCKDB" -list -noheader catchup.duckdb -c "$count_cell" 2>&1)"
+      if [ "$n" = 0 ]; then ok "$base: 0 rows differ from a fresh Work database with only the earlier Checkpoints"
+      else bad "$base: from only the earlier Checkpoints the Self-check gave '$n', want 0"; fi
+    fi
+  fi
+  checkpoints="$checkpoints
+$(card_block "$card" checkpoint | sql_cell 1)"
 done 3< <(challenge_cards)
 
 # expected/ in the repo is current.

@@ -11,7 +11,12 @@ fail=0
 outputs="generator/truth/patient.parquet
 generator/truth/admission.parquet
 data/warmup/patient_2017.parquet
-data/warmup/admission_2017.parquet"
+data/warmup/admission_2017.parquet
+generator/dq_answer_key.parquet
+data/raw/manifest.csv
+$(for m in 01 02 03 04 05 06 07 08 09 10 11 12; do
+    printf 'data/raw/2018-%s.csv\ndata/raw/2019-%s.json\ndata/raw/2020-%s.parquet\n' "$m" "$m" "$m"
+  done)"
 
 for run in a b; do
   if ! OUT_DIR="$tmp/$run" "$root/build.sh" data >"$tmp/$run.log" 2>&1; then
@@ -20,7 +25,7 @@ for run in a b; do
 done
 
 sums() { # sums <dir>: sha256 of every generated file, by relative path
-  (cd "$1" && find generator data/warmup -type f 2>/dev/null | LC_ALL=C sort | xargs shasum -a 256)
+  (cd "$1" && find generator data/warmup data/raw -type f 2>/dev/null | LC_ALL=C sort | xargs shasum -a 256)
 }
 
 while read -r f; do
