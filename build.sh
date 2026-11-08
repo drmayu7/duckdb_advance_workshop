@@ -20,7 +20,7 @@ Targets:
   expected    Run every Challenge solution in chain order (w, c01..c10, t-*)
               in one fresh Work database and write expected/<output>.parquet
               (OUT_DIR overrides where expected/ is written)
-  open-data Re-download the frozen open data into data/open/ (needs network)
+  open-data   Re-download the frozen open data into data/open/ (needs network)
   setup       Build the Setup release dist/duckdb-bundle-YYYYMMDD.zip
               (first run needs network to fill .cache/setup/; DIST_DIR and
               BUNDLE_DATE override the folder and the date)
@@ -91,19 +91,9 @@ build_data() {
   echo "build.sh: wrote $out/generator/truth/ and $out/data/warmup/"
 }
 
-# Challenge cards in chain order: the Warm-up, then C1-C10, then the tracks.
-challenge_cards() {
-  local card
-  for card in cards/w-*.md cards/c[0-9][0-9]-*.md cards/t-*.md; do
-    [ -e "$card" ] && echo "$card"
-  done
-  return 0
-}
-
-# card_output <card>: the `output:` value of a card's front-matter.
-card_output() {
-  awk 'NR > 1 && $0 == "---" { exit } NR > 1 && /^output:/ { sub(/^output: */, ""); print }' "$1"
-}
+# Challenge-card readers: challenge_cards, card_field, card_block, sql_cell.
+# shellcheck source=tools/cards.sh
+source tools/cards.sh
 
 # expected: each Challenge's expected Parquet is its canonical solution's output
 # (#5). The solutions share one Work database, so each one's input is the
@@ -114,14 +104,14 @@ build_expected() {
   out="$(cd "$out" && pwd)"
   work="$(mktemp -d)"
   trap 'rm -rf "$work"' RETURN
-  while read -r card; do
+  while read -r card <&3; do
     base="$(basename "$card" .md)"
-    table="$(card_output "$card")"
+    table="$(card_field "$card" output)"
     { echo ".bail on"; cat "solutions/$base.sql"; } | "$DUCKDB" "$work/work.duckdb" >/dev/null
     "$DUCKDB" "$work/work.duckdb" -c \
       "COPY (FROM $table ORDER BY ALL) TO '$out/expected/$table.parquet' (FORMAT parquet, COMPRESSION zstd);"
     echo "build.sh: wrote $out/expected/$table.parquet"
-  done < <(challenge_cards)
+  done 3< <(challenge_cards)
 }
 
 # setup: the Setup release (#14, #18). Paths inside the zip start at the bundle

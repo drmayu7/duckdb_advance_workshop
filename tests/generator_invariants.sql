@@ -66,6 +66,19 @@ SELECT assert_eq('residence district is a health district in the facility list',
 FROM patient
 WHERE district NOT IN (SELECT trim(DAERAH) FROM read_json('data/open/facilities.json'));
 
+-- ...and in the patient's own state (the list files KL and Putrajaya districts
+-- under the merged pseudo-state too).
+SELECT assert_eq('residence district is a health district of the residence state', count(*), 0)
+FROM patient p
+ANTI JOIN read_json('data/open/facilities.json') f
+  ON trim(f.DAERAH) = p.district
+ AND (f.NEGERI = p.state
+      OR (f.NEGERI = 'WILAYAH PERSEKUTUAN KUALA LUMPUR DAN PUTRAJAYA'
+          AND p.state IN ('WILAYAH PERSEKUTUAN KUALA LUMPUR', 'WILAYAH PERSEKUTUAN PUTRAJAYA')));
+
+SELECT assert_eq('dob is a plausible birth date (1920 to before 2017)', count(*), 0)
+FROM patient WHERE dob NOT BETWEEN DATE '1920-01-01' AND DATE '2016-12-31';
+
 SELECT assert_eq('postcode is 5 digits', count(*), 0)
 FROM patient WHERE NOT regexp_full_match(postcode, '[0-9]{5}');
 

@@ -8,30 +8,21 @@ fail=0
 ok()  { echo "ok: $*"; }
 bad() { echo "FAIL: $*"; fail=1; }
 
-front() { # front <card> <key>: the front-matter value
-  awk -v k="$2" 'NR == 1 && $0 != "---" { exit } NR > 1 && $0 == "---" { exit }
-                 NR > 1 { i = index($0, ":"); if (substr($0, 1, i - 1) == k) { v = substr($0, i + 1); sub(/^ +/, "", v); print v } }' "$1"
-}
-block() { # block <card> <name>: text between <!-- begin name --> and <!-- end name -->
-  awk -v b="<!-- begin $2 -->" -v e="<!-- end $2 -->" '$0 == e { f = 0 } f { print } $0 == b { f = 1 }' "$1"
-}
-sql_of() { # sql_of: the SQL inside ```sql fences on stdin
-  awk '/^ *```sql *$/ { f = 1; next } /^ *```/ { f = 0 } f'
-}
+# shellcheck source=tools/cards.sh
+source tools/cards.sh
 
 # Every card, including the setup card, has the six front-matter keys.
 for card in cards/*.md; do
   for key in id title module timebox input output; do
-    [ -n "$(front "$card" "$key")" ] || bad "$card: front-matter has no '$key'"
+    [ -n "$(card_field "$card" "$key")" ] || bad "$card: front-matter has no '$key'"
   done
 done
 [ "$fail" = 0 ] && ok "every card has id, title, module, timebox, input, output"
 
 challenges=0
-for card in cards/w-*.md cards/c[0-9][0-9]-*.md cards/t-*.md; do
-  [ -e "$card" ] || continue
+while read -r card <&3; do
   challenges=$((challenges + 1))
-  base="$(basename "$card" .md)"; id="$(front "$card" id)"; out="$(front "$card" output)"
+  base="$(basename "$card" .md)"; id="$(card_field "$card" id)"; out="$(card_field "$card" output)"
   expected="expected/$out.parquet"
 
   case "$base" in "$id"-*) ok "$card: file name starts with its id '$id'" ;;
@@ -51,15 +42,15 @@ for card in cards/w-*.md cards/c[0-9][0-9]-*.md cards/t-*.md; do
 
   # The Checkpoint is exactly the one line that loads the expected result.
   want="CREATE OR REPLACE TABLE $out AS FROM '$expected';"
-  got="$(block "$card" checkpoint | sql_of | sed -E 's/^ +//')"
+  got="$(card_block "$card" checkpoint | sql_cell | sed -E 's/^ +//')"
   if [ "$got" = "$want" ]; then ok "$card: Checkpoint line"; else bad "$card: Checkpoint should be '$want', got '$got'"; fi
 
   # Self-check: a count of differing rows, then the rows, both against $expected.
-  n="$(block "$card" self-check | sql_of | grep -c "'$expected'")"
+  n="$(card_block "$card" self-check | sql_cell | grep -c "'$expected'")"
   if [ "$n" -ge 4 ]; then ok "$card: Self-check compares both ways against $expected"; else bad "$card: Self-check should name '$expected' in both queries, both ways"; fi
 
   # The example row: its header is the output columns in order, and it is a real row.
-  table="$(block "$card" example-row | grep -E '^\|')"
+  table="$(card_block "$card" example-row | grep -E '^\|')"
   header="$(sed -n 1p <<<"$table" | tr -d ' ' | sed -E 's/^\||\|$//g; s/`//g; s/\|/,/g')"
   row="$(sed -n 3p <<<"$table")"
   if [ -f "$expected" ]; then
@@ -73,12 +64,12 @@ for card in cards/w-*.md cards/c[0-9][0-9]-*.md cards/t-*.md; do
   fi
 
   # The Warm-up is Series 1 SQL only: nothing Series 2 teaches.
-  if [ "$(front "$card" module)" = refresher ]; then
+  if [ "$(card_field "$card" module)" = refresher ]; then
     series2='\b(OVER|QUALIFY|WINDOW|PIVOT|UNPIVOT|MACRO|ASOF|LAMBDA|UNNEST|COLUMNS|EXCLUDE|STRUCT|list_[a-z_]+|regexp_[a-z_]+|string_split|read_csv|read_json|COPY|ATTACH)\b'
-    used="$( { sql_of <"$card"; cat "solutions/$base.sql"; } | grep -v '^ *--' \
+    used="$( { sql_cell <"$card"; cat "solutions/$base.sql"; } | grep -v '^ *--' \
              | grep -oiE "$series2" | sort -u | tr '\n' ' ')"
     if [ -z "$used" ]; then ok "$card: card and solution use Series 1 SQL only"; else bad "$card: card or solution uses Series 2 SQL: $used"; fi
   fi
-done
+done 3< <(challenge_cards)
 [ "$challenges" -gt 0 ] || bad "no Challenge cards (cards/w-*.md, cards/cNN-*.md, cards/t-*.md)"
 exit $fail

@@ -35,7 +35,7 @@ SELECT * FROM 'data/warmup/patient_2017.parquet';
 
 ## Definitions
 
-- **state**: the hospital's state, `facility_state`, not where the patient lives. There are 16.
+- **state**: the hospital's state, `facility_state`. There are 16. Don't use `patient_2017.state`: that is where the patient lives.
 - **admissions**: rows of `admission_2017`. Every row is one admission admitted in 2017.
 - **patients**: the number of different `patient_id`s admitted in that state.
 - **female_admissions**: admissions whose patient has `sex = 'F'` in `patient_2017`.

@@ -13,11 +13,8 @@ fail=0
 ok()  { echo "ok: $*"; }
 bad() { echo "FAIL: $*"; fail=1; }
 
-front() { awk -v k="$2" 'NR > 1 && $0 == "---" { exit } NR > 1 { i = index($0, ":"); if (substr($0, 1, i - 1) == k) { v = substr($0, i + 1); sub(/^ +/, "", v); print v } }' "$1"; }
-block() { awk -v b="<!-- begin $2 -->" -v e="<!-- end $2 -->" '$0 == e { f = 0 } f { print } $0 == b { f = 1 }' "$1"; }
-cell() { # cell <n>: the n-th ```sql cell on stdin
-  awk -v n="$1" '/^ *```sql *$/ { c++; if (c == n) f = 1; next } /^ *```/ { f = 0 } f'
-}
+# shellcheck source=tools/cards.sh
+source "$root/tools/cards.sh"
 
 # A bundle root: the content a Participant has, and a fresh Work database.
 bundle="$tmp/duckdb-bundle"
@@ -30,12 +27,11 @@ work=my_work.duckdb
 
 sql() { "$DUCKDB" -list -noheader "$work" -c "$1" 2>&1; }
 
-for card in cards/w-*.md cards/c[0-9][0-9]-*.md cards/t-*.md; do
-  [ -e "$card" ] || continue
-  base="$(basename "$card" .md)"; table="$(front "$card" output)"
-  count_cell="$(block "$card" self-check | cell 1)"
-  rows_cell="$(block "$card" self-check | cell 2)"
-  checkpoint="$(block "$card" checkpoint | cell 1)"
+while read -r card <&3; do
+  base="$(basename "$card" .md)"; table="$(card_field "$card" output)"
+  count_cell="$(card_block "$card" self-check | sql_cell 1)"
+  rows_cell="$(card_block "$card" self-check | sql_cell 2)"
+  checkpoint="$(card_block "$card" checkpoint | sql_cell 1)"
 
   if ! out="$( { echo .bail on; cat "solutions/$base.sql"; } | "$DUCKDB" "$work" 2>&1 >/dev/null)"; then
     bad "$base: solution failed: $out"; continue
@@ -58,7 +54,7 @@ for card in cards/w-*.md cards/c[0-9][0-9]-*.md cards/t-*.md; do
   sql "$checkpoint" >/dev/null
   n="$(sql "$count_cell")"
   if [ "$n" = 0 ]; then ok "$base: Checkpoint brings the Self-check back to 0"; else bad "$base: Self-check after the Checkpoint gave '$n', want 0"; fi
-done
+done 3< <(challenge_cards)
 
 # expected/ in the repo is current.
 cd "$root" || exit 1
