@@ -31,7 +31,7 @@ Steps 1–2 are in the pre-workshop email: use the laptop you'll bring, and down
 - **On a Mac (Apple Silicon):** extract the zip to the folder `duckdb-bundle` in your home folder (`~/duckdb-bundle`): double-click the zip in Finder (Safari may have extracted it already), rename the new folder to `duckdb-bundle` and drag it onto your home folder. Never use Desktop or Documents.
 - Then right-click `start-workshop.command` → **Open** → **Open**. If macOS still says it can't be opened, run this once in Terminal and double-click again: `xattr -dr com.apple.quarantine ~/duckdb-bundle`
 - The banner and the first cell are the same as on Windows.
-- **On an Intel Mac**, the bundle won't run. Say so in your reply; see the Fix sheet.
+- **On an Intel Mac**, the bundle won't run. Say so in your reply, and you'll get the online-only steps.
 <!-- end mac -->
 
 ## Day 1 setup check (9.00–9.20)
@@ -55,11 +55,11 @@ On Days 2 and 3, do the same every morning with that day's Content release.
 
 | Banner code or problem | Try first | Next fallback |
 |---|---|---|
-| `V1`: not DuckDB v1.5.6 | Start with `start-workshop` in the bundle folder, not a `duckdb` you installed yourself | Re-extract the bundle (Unblock first) |
+| `V1`: not DuckDB v1.5.6 | Start with `start-workshop` in the bundle folder, not a `duckdb` you installed yourself | — |
 | `E-<ext>` (for example `E-spatial`): an extension did not load | Re-extract the bundle (Unblock first) | Copy the pre-extracted folder from USB |
 | `D1`: `data/open` missing or incomplete | Double-click the launcher inside the bundle folder, not a copy of it | Re-extract the whole zip (it was probably a partial extract) |
-| `W1`: the bundle folder is not writable | Move the bundle folder to `%USERPROFILE%\duckdb-bundle` (Mac: `~/duckdb-bundle`) | Copy the pre-extracted folder from USB to that path |
-| `W2`: `my_work.duckdb` is open in another DuckDB window | Close the other DuckDB or UI window (and the launcher window), then relaunch | Restart the laptop, then relaunch |
+| `W1`: the bundle folder is not writable | Move the bundle folder to `%USERPROFILE%\duckdb-bundle` (Mac: `~/duckdb-bundle`) | — |
+| `W2`: `my_work.duckdb` is open in another DuckDB window | Close the other DuckDB or UI window (and the launcher window), then relaunch | — |
 | `F1`: the bundle folder is under OneDrive, Desktop or Documents | Move the folder to `%USERPROFILE%\duckdb-bundle` (Mac: `~/duckdb-bundle`) | — |
 | `U1`: an update could not be applied | Copy the Content release zip from USB into `updates` and relaunch | Extract it by hand over the bundle folder: Windows Explorer → Extract All → choose the bundle folder → **Replace all**; Mac: `ditto -x -k <the zip> ~/duckdb-bundle` |
 | `C1`: content incomplete (a file is missing or the wrong size) | Copy the Content release zip from USB into `updates` and relaunch | Extract it by hand, as for `U1` |

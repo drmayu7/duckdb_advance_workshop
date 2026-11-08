@@ -6,6 +6,7 @@
 set -u
 root="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$root" || exit 1
+DUCKDB="${DUCKDB:-duckdb}"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 fail=0
@@ -14,7 +15,7 @@ ok() { echo "ok: $*"; }
 
 card=cards/setup.md
 
-if ! DIST_DIR="$tmp" BUNDLE_DATE=20261109 DRIVE_LINK=https://drive.example/folder \
+if ! DIST_DIR="$tmp" BUNDLE_DATE=20261109 DRIVE_LINK='https://drive.example/folder?usp=sharing&x=1' \
      ./build.sh email >"$tmp/build.log" 2>&1; then
   bad "build.sh email failed:"; sed 's/^/  /' "$tmp/build.log"; exit 1
 fi
@@ -66,7 +67,7 @@ need "laptop and charger" 'Bring only the laptop and its charger'
 need "hotspot line"      'Bring a phone with mobile data that can share a hotspot'
 need "updates line"      'Later updates go into the `updates` folder.'
 need "bundle file name"  'duckdb-bundle-20261109.zip'
-need "Drive link"        'https://drive.example/folder'
+need "Drive link"        'https://drive.example/folder?usp=sharing&x=1'
 if grep -qE '\{\{|<!--' "$email"; then bad "email has an unfilled placeholder or comment"
 else ok "email has no placeholders or comments left"; fi
 

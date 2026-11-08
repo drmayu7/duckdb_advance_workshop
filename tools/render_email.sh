@@ -28,18 +28,16 @@ section() { # section <file> <name>: the lines between the markers, or fail
 }
 
 {
-  in_header=1
+  header=before # before -> inside (the leading comment) -> after
   while IFS= read -r line || [ -n "$line" ]; do
-    if [ "$in_header" = 1 ]; then
-      case "$line" in
-        "<!--"*) in_header=2; continue ;;
-      esac
+    if [ "$header" = before ]; then
+      header=after
+      case "$line" in "<!--"*) header=inside ;; esac
     fi
-    if [ "$in_header" = 2 ]; then
-      case "$line" in *"-->") in_header=0 ;; esac
+    if [ "$header" = inside ]; then
+      case "$line" in *"-->") header=after ;; esac
       continue
     fi
-    in_header=0
     if [[ "$line" =~ ^\<!--\ include\ ([^#]+)#([^ ]+)\ --\>$ ]]; then
       printf '%s\n' "<!-- section ${BASH_REMATCH[2]} -->"
       section "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"

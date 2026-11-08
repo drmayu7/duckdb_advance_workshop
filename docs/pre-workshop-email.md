@@ -9,16 +9,18 @@ Subject: DuckDB Workshop Series 2 (11–13 Nov): please set up your laptop by Tu
 
 Dear Participant,
 
-Before the workshop, please set up the laptop you'll bring and reply to this email by **Tuesday 10 Nov, 12.00**. It takes about 15 minutes. Nothing needs installing and you need no admin rights.
+Before the workshop, please set up the laptop you'll bring and reply to this email by **Tuesday 10 Nov, 12.00**. Nothing needs installing and you need no admin rights.
 
 1. Use the laptop you'll bring to the workshop, with at least 10 GB free.
 2. Open this MyGovUC Drive link, signed in with your MyGovUC account, and download `duckdb-bundle-{{BUNDLE_DATE}}.zip`: {{DRIVE_LINK}}
 <!-- include cards/setup.md#at-home -->
-6. Reply to this email with the block below, filled in.
+6. Reply to this email with the block at the end, filled in.
+
+On a Mac, steps 3 and 4 are different:
 
 <!-- include cards/setup.md#mac -->
 
-Reply with this block (keep one answer per line):
+The reply block (keep one answer per line):
 
 ```
 Laptop: Windows x64 / Windows ARM / Mac Apple Silicon / Mac Intel / government-managed
