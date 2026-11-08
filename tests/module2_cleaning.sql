@@ -130,8 +130,10 @@ FROM clean WHERE NOT regexp_full_match(patient_key, '\d{6}-\d{2}-9\d{3}');
 SELECT assert_eq('state is the true state (GE01, TX01 fixed by norm_state)', count(*), 0)
 FROM clean JOIN truth t USING (admission_id) WHERE clean.state IS DISTINCT FROM t.state;
 
-SELECT assert_eq('principal_dx is the true code (DX01 fixed by norm_icd)', count(*), 0)
-FROM clean JOIN truth t USING (admission_id) WHERE clean.principal_dx IS DISTINCT FROM t.principal_dx;
+SELECT assert_eq('principal_dx is the true code (DX01 fixed by norm_icd), or a legacy dengue code (DX02, for C7)', count(*), 0)
+FROM clean JOIN truth t USING (admission_id)
+WHERE clean.principal_dx IS DISTINCT FROM t.principal_dx
+  AND NOT (clean.principal_dx IN ('A90', 'A91') AND admission_id IN (SELECT admission_id FROM answer_key WHERE defect_code = 'DX02'));
 
 SELECT assert_eq('district is the true district, or NULL for a null spelling (NU02)', count(*), 0)
 FROM clean JOIN truth t USING (admission_id)

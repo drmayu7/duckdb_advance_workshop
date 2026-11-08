@@ -342,6 +342,65 @@ INSERT INTO dq SELECT rid, file, col, 'PT01', dirty, clean FROM hit;
 UPDATE rx SET name = hit.dirty FROM hit WHERE rx.rid = hit.rid;
 DROP TABLE hit;
 
+
+-- ----------------------------------------------- Module 3 defects (#29)
+-- DX02 (C7): dengue in the pre-2016 codes, A90 (dengue fever) for A97.0/A97.9
+-- and A91 (dengue haemorrhagic fever) for A97.1/A97.2. Mostly the old HIS,
+-- less after each upgrade. The clean value is the truth's code: C7 counts both
+-- as dengue through ref_icd10.scenario_group rather than recoding them.
+CREATE TABLE hit AS
+SELECT rid, file, 'principal_dx' AS col,
+       CASE WHEN principal_dx IN ('A97.0', 'A97.9') THEN 'A90' ELSE 'A91' END AS dirty, principal_dx AS clean
+FROM rx
+WHERE principal_dx LIKE 'A97.%' AND free(rid, 'principal_dx')
+  AND u(rid, 'dx02') < CASE sys WHEN 'old_his' THEN 0.35 WHEN 'interim' THEN 0.15 ELSE 0.04 END;
+INSERT INTO dq SELECT rid, file, col, 'DX02', dirty, clean FROM hit;
+UPDATE rx SET principal_dx = hit.dirty FROM hit WHERE rx.rid = hit.rid;
+DROP TABLE hit;
+
+-- AD04 (C9): the discharge status in words, Malay in the old HIS and English
+-- after it. None is a C4 null spelling.
+CREATE TABLE ad04_spelling (status VARCHAR, malay VARCHAR[], english VARCHAR[]);
+INSERT INTO ad04_spelling VALUES
+  ('DISCHARGED', ['Discaj', 'Balik rumah', 'DISCAJ'], ['Home', 'Discharged', 'discharged']),
+  ('DIED', ['Mati', 'Meninggal dunia', 'MENINGGAL DUNIA'], ['Died', 'Death', 'Expired']),
+  ('TRANSFERRED', ['Pindah', 'Dipindahkan', 'PINDAH HOSPITAL'], ['Transfer', 'Transferred out', 'transfer']),
+  ('AOR', ['Discaj atas risiko sendiri', 'Atas risiko sendiri'], ['Discharge at own risk', 'At own risk', 'aor']);
+CREATE TABLE hit AS
+SELECT rid, file, 'discharge_status' AS col,
+       pick(CASE WHEN sys = 'old_his' THEN g.malay ELSE g.english END, u(rid, 'ad04v')) AS dirty,
+       rx.discharge_status AS clean
+FROM rx JOIN ad04_spelling g ON g.status = rx.discharge_status
+WHERE free(rid, 'discharge_status')
+  AND u(rid, 'ad04') < CASE sys WHEN 'old_his' THEN 0.5 WHEN 'interim' THEN 0.25 ELSE 0.05 END;
+INSERT INTO dq SELECT rid, file, col, 'AD04', dirty, clean FROM hit;
+UPDATE rx SET discharge_status = hit.dirty FROM hit WHERE rx.rid = hit.rid;
+DROP TABLE hit;
+
+-- AD03 (C8): a transfer is two admission records, the second at another
+-- hospital from the day the first ends. It is in the clean truth already; the
+-- Answer key names each receiving record, and (in dirty_value, until the Answer
+-- key turns it into a record number) the rid of the stay it continues. Only
+-- transfers with both stays in 2018-2020.
+INSERT INTO dq
+SELECT r.rid, r.file, NULL, 'AD03', p.rid::VARCHAR, NULL
+FROM (SELECT admission_id, admission_type,
+             lag(admission_id) OVER (PARTITION BY patient_id ORDER BY admit_ts) AS prev_id
+      FROM admission) a
+JOIN rx r ON r.admission_id = a.admission_id
+JOIN rx p ON p.admission_id = a.prev_id
+WHERE a.admission_type = 'TRANSFER';
+
+-- SH01 (C10): the dengue CSV (open data, D8) is wide: one column per state.
+-- One row per state column: the column with its type, and the MoH state it
+-- becomes once unpivoted (the CSV writes WP KUALA LUMPUR and WP LABUAN).
+INSERT INTO dq
+SELECT NULL, 'open/dengue_state_age_2018_2021.csv', column_name, 'SH01', column_name || ' ' || column_type,
+       regexp_replace(column_name, '^WP ', 'WILAYAH PERSEKUTUAN ')
+FROM (DESCRIBE FROM read_csv('data/open/dengue_state_age_2018_2021.csv'))
+WHERE column_name NOT IN ('TAHUN', 'KUMPULAN UMUR');
+
+-- ------------------------------- whole-file and copy defects (#23, #24)
 -- SD01 (C3): schema drift, one row per file and drifting column: "name TYPE" as
 -- the file has it, and the column it becomes in admission_raw. The old HIS
 -- names every column in Malay; the new system types dob and the admit and
@@ -458,21 +517,24 @@ COPY (SELECT file, count(*) AS rows FROM rx GROUP BY file ORDER BY file)
   TO 'data/raw/manifest.csv' (FORMAT csv, HEADER true);
 
 -- The Answer key, located by file and record number (1 = the first record after any header).
--- A whole-record defect (AD01, AD02) has no column; its dirty_value names the record it copies.
+-- A whole-record defect (AD01, AD02, AD03) has no column; its dirty_value names
+-- the record it copies or continues. SH01 is on an open-data file, not the extract.
 CREATE TABLE rx_row AS
-SELECT rid, admission_id, row_number() OVER (PARTITION BY file ORDER BY rid) AS row_no FROM rx;
+SELECT rid, admission_id, file, row_number() OVER (PARTITION BY file ORDER BY rid) AS row_no FROM rx;
 COPY (
-  SELECT 'data/raw/' || dq.file AS file,
+  SELECT CASE WHEN dq.file LIKE 'open/%' THEN 'data/' ELSE 'data/raw/' END || dq.file AS file,
          r.row_no,
-         CASE WHEN dq.file LIKE '%.csv' THEN c.old_his WHEN dq.file LIKE '%.json' THEN c.interim ELSE c.new_his END AS column_name,
+         CASE WHEN dq.defect_code = 'SH01' THEN dq.col
+              WHEN dq.file LIKE '%.csv' THEN c.old_his WHEN dq.file LIKE '%.json' THEN c.interim ELSE c.new_his END AS column_name,
          dq.defect_code,
          CASE dq.defect_code WHEN 'AD01' THEN 'exact copy of record ' || o.row_no
                              WHEN 'AD02' THEN 'older version of record ' || o.row_no
+                             WHEN 'AD03' THEN 'continues the stay in record ' || o.row_no || ' of data/raw/' || o.file
                              ELSE dq.dirty_value END AS dirty_value,
          dq.clean_value, r.admission_id
-  FROM (SELECT *, CASE WHEN defect_code IN ('AD01', 'AD02') THEN dirty_value::BIGINT END AS of_rid FROM dq) dq
+  FROM (SELECT *, CASE WHEN defect_code IN ('AD01', 'AD02', 'AD03') THEN dirty_value::BIGINT END AS of_rid FROM dq) dq
   LEFT JOIN raw_columns c USING (col)
   LEFT JOIN rx_row r USING (rid)
   LEFT JOIN rx_row o ON o.rid = dq.of_rid
-  ORDER BY file, row_no NULLS FIRST, c.pos NULLS FIRST, defect_code
+  ORDER BY file, row_no NULLS FIRST, c.pos NULLS FIRST, defect_code, column_name
 ) TO 'generator/dq_answer_key.parquet' (FORMAT parquet, COMPRESSION zstd);

@@ -62,7 +62,7 @@ SELECT strptime('03/04/18', '%d/%m/%Y') AS too_early;
 <!-- begin example-row -->
 | source_system | mrn | mykad | name | dob | sex | state | district | postcode | address | facility_code | admit_date | discharge_date | los_days | date_flag | discharge_status | principal_dx | secondary_dx | updated_at | ward | admission_type | file |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| old_his | RN0029038 | 540421-13-9123 | LAU YONG MEI | 1954-04-21 | M | SARAWAK | SAMARAHAN | 94300 | NO 64, JALAN SETIA 7 | 11-13100024 | 2018-03-09 | 2018-03-11 | 2 | NULL | DISCHARGED | A97.0 | I50.9 | 2018-03-12 03:39:00 | NULL | NULL | 2018-03.csv |
+| old_his | RN0029038 | 540421-13-9123 | LAU YONG MEI | 1954-04-21 | M | SARAWAK | SAMARAHAN | 94300 | NO 64, JALAN SETIA 7 | 11-13100024 | 2018-03-09 | 2018-03-11 | 2 | NULL | DISCHARGED | A90 | I50.9 | 2018-03-12 03:39:00 | NULL | NULL | 2018-03.csv |
 <!-- end example-row -->
 
 ## Core and Stretch
