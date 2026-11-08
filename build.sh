@@ -27,6 +27,11 @@ Targets:
   setup       Build the Setup release dist/duckdb-bundle-YYYYMMDD.zip
               (first run needs network to fill .cache/setup/; DIST_DIR and
               BUNDLE_DATE override the folder and the date)
+  cards       Render every card into one offline page dist/cards.html
+              (DIST_DIR overrides the folder)
+  content     Build the Content release dist/duckdb-content-YYYYMMDD-HHMM.zip
+              from HEAD (CONTENT_ID overrides the id, DIST_DIR the folder,
+              CONTENT_REF the commit or tree it is built from)
   email       Render the pre-workshop email to dist/pre-workshop-email.md
               (DRIVE_LINK fills the Drive link; BUNDLE_DATE and DIST_DIR as above)
   help        Show this message
@@ -159,6 +164,55 @@ build_setup() {
   echo "build.sh: wrote $zip"
 }
 
+# cards: cards.html, every card on one offline page (#22).
+build_cards() {
+  local dist="${DIST_DIR:-dist}"
+  mkdir -p "$dist"
+  bash tools/cards_html.sh . "$dist/cards.html"
+  echo "build.sh: wrote $dist/cards.html"
+}
+
+# The paths a Content release carries (#15, #16). Never bin/, repo/, launchers,
+# install.sql, a Work database, generator/, capstone_truth/ or capstone/hints.md.
+CONTENT_PATHS=(cards solutions expected data/raw data/warmup data/capstone capstone demos handouts)
+CONTENT_NEVER=(':(exclude)capstone/hints.md' ':(exclude,glob)**/*.duckdb')
+
+# content: the Content release (#15, #22), from HEAD, so a hotfix ships only what
+# is committed. It lays over the bundle root; the launcher applies it, and its own
+# smoke_test.sql checks content_manifest.csv (C1) and reports release.txt.
+build_content() {
+  local dist="${DIST_DIR:-dist}" id="${CONTENT_ID:-$(date +%Y%m%d-%H%M)}" ref="${CONTENT_REF:-HEAD}" stage zip
+  local -a present=()
+  local p
+  if ! [[ "$id" =~ ^[0-9]{8}-[0-9]{4}$ ]]; then
+    echo "build.sh: CONTENT_ID must be YYYYMMDD-HHMM, not '$id'" >&2; return 1
+  fi
+  if [ "$ref" = HEAD ] && [ -n "$(git status --porcelain -- "${CONTENT_PATHS[@]}" setup/smoke_test.sql)" ]; then
+    echo "build.sh: note: uncommitted content changes are not in this release (it is built from HEAD)" >&2
+  fi
+  stage="$(mktemp -d)"
+  trap 'rm -rf "$stage"' RETURN
+
+  while read -r p; do present+=("$p"); done < <(git ls-tree --name-only "$ref" -- "${CONTENT_PATHS[@]}")
+  [ "${#present[@]}" -gt 0 ] || { echo "build.sh: $ref has no content to release" >&2; return 1; }
+  git archive "$ref" -- "${present[@]}" "${CONTENT_NEVER[@]}" | tar -x -C "$stage"
+  git show "$ref:setup/smoke_test.sql" >"$stage/smoke_test.sql"
+  bash tools/cards_html.sh "$stage" "$stage/cards.html"
+  echo "$id" >"$stage/release.txt"
+  (cd "$stage" && {
+    echo "path,size"
+    find . -type f ! -name .DS_Store ! -path ./content_manifest.csv | sed 's|^\./||' | LC_ALL=C sort | while read -r f; do
+      echo "$f,$(wc -c <"$f" | tr -d ' ')"
+    done
+  } >content_manifest.csv)
+
+  mkdir -p "$dist"
+  zip="$(cd "$dist" && pwd)/duckdb-content-$id.zip"
+  rm -f "$zip"
+  (cd "$stage" && zip -q -r -X "$zip" . -x '*.DS_Store')
+  echo "build.sh: wrote $zip (Content $id)"
+}
+
 # email: the pre-workshop email (#19). Steps 3-5 and the Mac block come from
 # the setup card, so the email and cards/setup.md never drift apart.
 build_email() {
@@ -177,6 +231,8 @@ case "${1:-help}" in
   expected)  build_expected ;;
   open-data) bash tools/fetch_open_data.sh ;;
   setup)     build_setup ;;
+  cards)     build_cards ;;
+  content)   build_content ;;
   email)     build_email ;;
   help|-h|--help) usage ;;
   *) echo "build.sh: unknown target '$1'" >&2; usage >&2; exit 2 ;;

@@ -21,7 +21,13 @@ set "LOG=setup.log"
 (type nul >"%LOG%") 2>nul || set "LOG=%TEMP%\duckdb-setup.log"
 set "BANNER=%TEMP%\duckdb-setup-banner.txt"
 
-"%DUCKDB%" :memory: -f install.sql >"%LOG%" 2>&1
+rem Content releases dropped unopened into updates\ are applied in name order, over
+rem this folder (overwrite, never delete), then moved to updates\applied\ so they are
+rem never applied again over newer files. One that fails stays in updates\ and is U1.
+set "WORKSHOP_U1=0"
+for /f "delims=" %%Z in ('dir /b /a-d /on "updates\*.zip" 2^>nul') do call :apply "%%Z"
+
+"%DUCKDB%" :memory: -f install.sql >>"%LOG%" 2>&1
 "%DUCKDB%" :memory: -f smoke_test.sql >"%BANNER%" 2>>"%LOG%"
 findstr /b /c:"SETUP " "%BANNER%" >nul 2>&1 || >"%BANNER%" echo SETUP FAILED: the setup check could not run, see setup.log
 
@@ -44,3 +50,16 @@ if "%OK%"=="0" (
 
 "%DUCKDB%" -ui my_work.duckdb
 if errorlevel 1 pause
+exit /b
+
+rem apply <zip name>: extract one Content release over the bundle (Windows tar reads zip).
+:apply
+>>"%LOG%" echo Applying updates\%~1
+tar -xf "updates\%~1" >>"%LOG%" 2>&1 || goto apply_failed
+if not exist "updates\applied" mkdir "updates\applied"
+move /y "updates\%~1" "updates\applied\" >>"%LOG%" 2>&1 || goto apply_failed
+exit /b 0
+:apply_failed
+>>"%LOG%" echo U1: could not apply updates\%~1
+set "WORKSHOP_U1=1"
+exit /b 0
