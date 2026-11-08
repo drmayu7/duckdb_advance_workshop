@@ -4,4 +4,4 @@
 set -u
 cd "$(dirname "$0")/.." || exit 1
 command -v shellcheck >/dev/null || { echo "FAIL: shellcheck is not installed"; exit 1; }
-git ls-files -co --exclude-standard -z -- '*.sh' '.githooks/*' | xargs -0 shellcheck -x
+git ls-files -co --exclude-standard -z -- '*.sh' '*.command' '.githooks/*' | xargs -0 shellcheck -x
