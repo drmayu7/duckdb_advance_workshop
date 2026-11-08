@@ -74,6 +74,11 @@ The report the Scenario works towards. It answers three questions for 2018–202
 
 A hands-on task given to Participants after a short demo, followed by a reveal of the solution. Each Challenge has a Core tier and a Stretch tier, and comes with a Self-check.
 
+## Challenge card
+
+The one-page written brief a Participant follows during a Challenge: what to produce, the definitions that settle any ambiguity, the Core and Stretch tiers, the Self-check and the Checkpoint. Each Challenge has exactly one card. The solution is kept apart from it.
+_Avoid_: worksheet, exercise sheet
+
 ## Core tier
 
 The part of a Challenge that every Participant is expected to finish, whatever their role or SQL fluency.
@@ -94,3 +99,7 @@ The expected result of a Challenge, which a Participant who didn't finish loads 
 ## Reveal
 
 The facilitator's walkthrough of a Challenge's solution after the time box ends. The solution is in the repo from the start, kept apart from the Challenge so Participants can choose not to see it early.
+
+## Work database
+
+The Participant's own DuckDB database on their laptop, where the tables they build in each Challenge are kept from one day to the next. It is never shared: workshop data is handed out as files, not as databases.
