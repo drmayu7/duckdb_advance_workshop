@@ -4,7 +4,15 @@ Terms used across the DuckDB Workshop Series 2 materials.
 
 ## Series 1
 
-The first DuckDB workshop, run about three months before Series 2. It covered installing DuckDB, using the DuckDB UI, and core SQL: CREATE TABLE, SELECT, joins, GROUP BY, HAVING, ORDER BY, LIMIT, SAMPLE, CTEs, subqueries and filtering. Series 2 assumes this as known material and does not re-teach it.
+The first DuckDB workshop, run about three months before Series 2. It covered installing DuckDB, using the DuckDB UI, and core SQL: CREATE TABLE, SELECT, joins, GROUP BY, HAVING, ORDER BY, LIMIT, SAMPLE, CTEs, subqueries and filtering. Series 2 assumes this as known material and does not re-teach it, apart from a short Series 1 refresher.
+
+## Series 1 refresher
+
+The short session that opens Series 2, right after the setup check: a one-page recap of Series 1 SQL followed by a Warm-up Challenge on the Scenario data. It reminds Participants of what they learned three months earlier and gets them using the DuckDB UI again. It is not a re-teach of Series 1.
+
+## Warm-up Challenge
+
+The Challenge in the Series 1 refresher. It uses only Series 1 SQL, on clean Scenario tables, and has a Self-check and a Reveal like any other Challenge.
 
 ## Series 2
 
@@ -17,6 +25,11 @@ The official day-by-day schedule of sessions (the "Tentatif Program", Lampiran 1
 ## Module
 
 A themed block of sessions in the Programme, such as "Data Import/Export & File Formats". A Module can run over more than one time slot.
+
+## Extension track
+
+A self-paced, card-driven Challenge built around one DuckDB extension (statistics, name matching or spatial). After a short facilitator tour of all the tracks, each Participant picks two.
+_Avoid_: rotation, station (these imply parallel floor helpers, which Series 2 doesn't have)
 
 ## Capstone
 
