@@ -18,6 +18,8 @@ Targets:
   setup       Build the Setup release dist/duckdb-bundle-YYYYMMDD.zip
               (first run needs network to fill .cache/setup/; DIST_DIR and
               BUNDLE_DATE override the folder and the date)
+  email       Render the pre-workshop email to dist/pre-workshop-email.md
+              (DRIVE_LINK fills the Drive link; BUNDLE_DATE and DIST_DIR as above)
   help        Show this message
 
 Once per clone, run tests before every commit: git config core.hooksPath .githooks
@@ -95,12 +97,23 @@ build_setup() {
   echo "build.sh: wrote $zip"
 }
 
+# email: the pre-workshop email (#19). Steps 3-5 and the Mac block come from
+# the setup card, so the email and cards/setup.md never drift apart.
+build_email() {
+  local dist="${DIST_DIR:-dist}" out
+  mkdir -p "$dist"
+  out="$dist/pre-workshop-email.md"
+  bash tools/render_email.sh docs/pre-workshop-email.md >"$out"
+  echo "build.sh: wrote $out"
+}
+
 require_duckdb
 
 case "${1:-help}" in
   test)      run_tests ;;
   open-data) bash tools/fetch_open_data.sh ;;
   setup)     build_setup ;;
+  email)     build_email ;;
   help|-h|--help) usage ;;
   *) echo "build.sh: unknown target '$1'" >&2; usage >&2; exit 2 ;;
 esac
