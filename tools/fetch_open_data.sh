@@ -103,4 +103,11 @@ COPY (
   ORDER BY icd10
 ) TO '$OUT/ref_icd10.csv' (HEADER);"
 
+# Record checksums so tests/open_checksums.sh can prove the copies stay byte-exact.
+(
+  cd "$OUT"
+  for f in *; do [ "$f" = SHA256SUMS ] || shasum -a 256 "$f"; done > "$tmp/SHA256SUMS"
+  mv "$tmp/SHA256SUMS" SHA256SUMS
+)
+
 echo "open data written to $OUT/"

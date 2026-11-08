@@ -16,6 +16,8 @@ Targets:
   test        Run every check in tests/ and report pass/fail
   open-data   Re-download the frozen open data into data/open/ (needs network)
   help        Show this message
+
+Once per clone, run tests before every commit: git config core.hooksPath .githooks
 EOF
 }
 

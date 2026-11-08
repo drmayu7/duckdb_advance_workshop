@@ -16,6 +16,7 @@ fi
 # Each file must appear in a Markdown table row that names a source URL and a licence.
 for f in data/open/*; do
   name="$(basename "$f")"
+  [ "$name" = SHA256SUMS ] && continue
   row="$(grep -F "\`$name\`" "$readme" | grep '^|' | head -1)"
   if [ -z "$row" ]; then
     echo "FAIL: $name has no row in $readme"; fail=1
