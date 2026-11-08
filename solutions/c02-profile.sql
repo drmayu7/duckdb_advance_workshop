@@ -22,6 +22,7 @@ SELECT 'padded',
        count(*) FILTER (WHERE COLUMNS(*) <> trim(COLUMNS(*), ' ' || chr(160)))
 FROM raw_2018;
 
+-- Read it: which columns will C4 and C6 have to clean?
 FROM profile_nulls;
 
 -- Stretch S1: which null spellings, in which columns, and how often.

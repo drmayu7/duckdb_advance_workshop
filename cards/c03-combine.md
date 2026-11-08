@@ -53,7 +53,7 @@ DESCRIBE FROM 'data/raw/2020-*.parquet';
 <!-- begin example-row -->
 | source_system | mrn | mykad | name | dob | sex | state | district | postcode | address | facility_code | admit_date | discharge_date | discharge_status | principal_dx | secondary_dx | updated_at | ward | admission_type | file |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| new_his | RN1827028 | 330425-13-9091 | IBRAHIM BIN SULAIMAN | 1933-04-25 | M | SABAH | KINABATANGAN | 90020 | NO 9, JALAN CENGAL 10 | 11-12210043 | 2020-01-17 | 2020-01-20 | DISCHARGED | J45.8 | E11.9; A09.9 | 2020-01-22 00:54:00 | MEDICAL | EMERGENCY | 2020-01.parquet |
+| new_his | RN1827028 | 330425-13-9091 | IBRAHIM BIN SULAIMAN | 1933-04-25 | M | SABAH | KINABATANGAN | 90020 | NO 9, JALAN CENGAL 10 | 11-12210043 | 2020-01-17 | 2020-01-20 | DISCHARGED | J45.8 | E11.9; A09.9 | 2020-01-22 08:00:00 | MEDICAL | EMERGENCY | 2020-01.parquet |
 <!-- end example-row -->
 
 ## Core and Stretch

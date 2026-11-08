@@ -70,7 +70,7 @@ SELECT error_type, count(*) AS lines FROM rejects_2018 GROUP BY error_type;
 <!-- begin example-row -->
 | no_mrn | no_kp | nama | tarikh_lahir | jantina | negeri | daerah | poskod | alamat | kod_fasiliti | tarikh_masuk | tarikh_keluar | status_discaj | dx_utama | dx_sekunder | dikemaskini | file |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| RN3279283 | 360721-10-9874 | HIDAYAH BINTI IZZAT | 21/07/1936 | F | SELANGOR | KUALA SELANGOR | 45600 | NO 111, JALAN DURIAN 12 | 11-10072300 | 02/03/2018 | 15/03/2018 | DISCHARGED | J44.9 | NA | 17/03/2018 02:39 | 2018-03.csv |
+| RN3279283 | 360721-10-9874 | HIDAYAH BINTI IZZAT | 21/07/1936 | F | SELANGOR | KUALA SELANGOR | 45600 | NO 111, JALAN DURIAN 12 | 11-10072300 | 02/03/2018 | 15/03/2018 | DISCHARGED | J44.9 | NA | 17/03/2018 09:40 | 2018-03.csv |
 <!-- end example-row -->
 
 ## Core and Stretch

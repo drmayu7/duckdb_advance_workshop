@@ -19,7 +19,7 @@ CREATE TABLE rx AS
 WITH a AS (
   SELECT a.*, p.mykad, p.name, p.dob, p.sex, p.state, p.district, p.postcode, p.address,
          year(a.admit_ts) AS y,
-         a.discharge_ts + to_minutes((60 + hash(a.admission_id, 'updated') % 2820)::BIGINT) AS updated_ts
+         a.discharge_ts + to_minutes((60 + floor(u(a.admission_id, 'updated') * 2820))::BIGINT) AS updated_ts
   FROM admission a JOIN patient p USING (patient_id)
   WHERE year(a.admit_ts) BETWEEN 2018 AND 2020
 )
