@@ -13,6 +13,19 @@ A clean, synthetic 2017 extract for the Warm-up Challenge (`cards/w-warmup.md`).
 
 Synthetic ICs follow the MyKad format `YYMMDD-PB-###G`, but the last four digits always start with `9`, so they are recognisably workshop data.
 
+## Raw extract 2018–2020 (`data/raw/`)
+
+The synthetic admission export that Module 1 starts from (`cards/c01-read-csv.md` onwards): one row per admission, with the patient's details repeated on every row, in one file per admit month. The hospitals changed systems twice, so each year comes in its own format. The files carry deliberate data-quality problems, as a real export would; the Challenges find and fix them. All files are generated, not downloaded.
+
+| Files | Source system | Format |
+|---|---|---|
+| `2018-01.csv` … `2018-12.csv` | Old HIS | CSV with a header row and Malay column names (`no_mrn`, `no_kp`, `nama`, `tarikh_lahir`, `jantina`, `negeri`, `daerah`, `poskod`, `alamat`, `kod_fasiliti`, `tarikh_masuk`, `tarikh_keluar`, `status_discaj`, `dx_utama`, `dx_sekunder`, `dikemaskini`). Dates are `DD/MM/YYYY`. |
+| `2019-01.json` … `2019-12.json` | Interim system | Newline-delimited JSON, one object per admission, every value a string or null: `mrn`, `mykad`, `name`, `dob`, `sex`, `state`, `district`, `postcode`, `address`, `facility_code`, `admit_date`, `discharge_date`, `discharge_status`, `principal_dx`, `secondary_dx`, `updated_at`. Dates are `YYYY-MM-DD`. |
+| `2020-01.parquet` … `2020-12.parquet` | New system | Parquet with the interim system's columns, except that `dob` is a `DATE` and the admission is timed: `admit_ts` and `discharge_ts` (`TIMESTAMP`) replace `admit_date` and `discharge_date`. Two columns are new: `ward` and `admission_type`. |
+| `manifest.csv` | – | `file`, `rows`: how many admissions each file holds. A careful read of each file gives exactly this many rows. |
+
+`state`, `district`, `postcode` and `address` are where the patient lives. `secondary_dx` lists secondary diagnoses as ICD-10 codes separated by `; `.
+
 ## Open data (`data/open/`)
 
 Real Malaysian open data, used as reference tables to join to. Every file reads directly in DuckDB 1.5.6, for example `FROM 'data/open/population_state.parquet'` or `FROM read_json('data/open/facilities.json')`.

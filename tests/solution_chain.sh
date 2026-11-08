@@ -21,6 +21,7 @@ bundle="$tmp/duckdb-bundle"
 mkdir -p "$bundle/data"
 cp -R "$root/cards" "$root/solutions" "$root/expected" "$bundle/"
 cp -R "$root/data/warmup" "$bundle/data/warmup"
+cp -R "$root/data/raw" "$bundle/data/raw"
 ln -s "$root/data/open" "$bundle/data/open"
 cd "$bundle" || exit 1
 work=my_work.duckdb
@@ -42,9 +43,13 @@ while read -r card <&3; do
   if [ -z "$rows" ]; then ok "$base: Self-check lists no differing rows"; else bad "$base: Self-check listed rows: $rows"; fi
 
   # A wrong answer: one row missing and one row changed.
+  # The changed column is the first number, or else the first text column.
   num="$(sql "SELECT name FROM pragma_table_info('$table') WHERE type IN ('BIGINT', 'INTEGER', 'DOUBLE') ORDER BY cid LIMIT 1")"
+  if [ -n "$num" ]; then change="$num = $num + 1"
+  else txt="$(sql "SELECT name FROM pragma_table_info('$table') WHERE type = 'VARCHAR' ORDER BY cid LIMIT 1")"
+       change="$txt = coalesce($txt, '') || 'x'"; fi
   sql "DELETE FROM $table WHERE rowid = (SELECT min(rowid) FROM $table);
-       UPDATE $table SET $num = $num + 1 WHERE rowid = (SELECT max(rowid) FROM $table);" >/dev/null
+       UPDATE $table SET $change WHERE rowid = (SELECT max(rowid) FROM $table);" >/dev/null
   n="$(sql "$count_cell")"
   if [ "$n" = 3 ]; then ok "$base: Self-check counts 3 rows differ for a missing row and a changed row"; else bad "$base: Self-check on a wrong answer gave '$n', want 3"; fi
   rows="$(sql "$rows_cell" | cut -d'|' -f1 | sort | uniq -c | awk '{ printf "%s %s;", $1, $2 }')"
