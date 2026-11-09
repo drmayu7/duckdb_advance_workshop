@@ -99,18 +99,8 @@ Anyone behind at any point loads the Checkpoint and carries on: the Checkpoints 
     { t: "12.40", head: "S3", body: "Live demo", w: 15, fill: COLOR.amber, dark: true },
     { t: "12.55", head: "Py / R", body: "", w: 5, fill: COLOR.amber, dark: true },
   ];
-  const total = blocks.reduce((a, b) => a + b.w, 0);
+  deck.timeline(s, blocks, { end: "1.00" });
   const span = W - 2 * MARGIN;
-  let x = MARGIN;
-  blocks.forEach((b) => {
-    const bw = (b.w / total) * span;
-    s.addShape(deck.shapes.RECTANGLE, { x, y: 2.0, w: bw - 0.04, h: 1.3, fill: { color: b.fill }, line: { type: "none" } });
-    if (bw > 0.7) deck.text(s, x + 0.1, 2.1, bw - 0.2, 0.5, b.head, { fontFace: FONT.head, fontSize: 20, bold: true, color: b.dark ? COLOR.ink : COLOR.white });
-    if (bw > 1.3) deck.text(s, x + 0.1, 2.6, bw - 0.2, 0.6, b.body, { fontSize: 13, color: b.dark ? COLOR.ink : COLOR.white });
-    deck.text(s, x, 1.6, 1.0, 0.35, b.t, { fontSize: 13, color: COLOR.muted });
-    x += bw;
-  });
-  deck.text(s, W - MARGIN - 1.1, 3.4, 1.1, 0.35, "1.00", { fontSize: 13, color: COLOR.muted, align: "right" });
   deck.text(s, W - MARGIN - 3.0, 3.75, 3.0, 0.35, "the last 5 min: Python and R", { fontSize: 12, color: COLOR.muted, align: "right", italic: true });
 
   const cw = (span - 2 * 0.4) / 3;
@@ -514,7 +504,7 @@ DESCRIBE: year is a column, but it isn't in any file. DuckDB reads it from the f
     3: { title: "Clear the HTTP log", notes: `
 The setup cell turned on HTTP logging in memory. Clear it now, so the next fetched() shows one query's bytes only.` },
     "3a": { title: "Two columns, one year: 7 MiB", notes: `
-Run the query, then fetched(): about 7 MiB in 76 requests on 9 Nov. Only facility_code is read, from the 4 files of 2021 (year is a folder, not a column in the files). Then clear the log again.` },
+Run the query, then fetched(): about 7 MiB in 76 requests on 9 Nov. The two columns are facility_code, read from the 4 files of 2021, and year, which comes from the folder names and costs nothing. Then clear the log again.` },
     "3b": { title: "Every column, every year: 414 MiB", notes: `
 On a phone hotspot, skip this one and quote the backup figure: 414 MiB in 271 requests. count(COLUMNS(*)) forces every column of every file over the network: about 60 times step 3a.
 
@@ -651,7 +641,7 @@ Use if the network failed, or quote the right-hand figure if you skipped 3b on a
   deck.chip(s, MARGIN, 4.5, 5.4, 0.5, s3["3a"].plan, { fill: COLOR.ink, color: COLOR.white, fontSize: 15 });
   deck.text(s, MARGIN, 5.15, 5.4, 1.3, "From the plan (EXPLAIN ANALYZE): only the 2021 folder's files were opened.", { fontSize: 15 });
   stat(s, MARGIN + 6.0, 2.0, 3.0, s3["3a"].fetched, `3a · ${s3["3a"].requests} requests`, { fill: COLOR.greenTint, color: COLOR.green });
-  deck.text(s, MARGIN + 6.0, 3.55, 3.0, 0.9, "one column, 2021", { fontSize: 14, color: COLOR.muted });
+  deck.text(s, MARGIN + 6.0, 3.55, 3.0, 0.9, "two columns, 2021", { fontSize: 14, color: COLOR.muted });
   stat(s, MARGIN + 9.3, 2.0, W - 2 * MARGIN - 9.3, s3["3b"].fetched, `3b · ${s3["3b"].requests} requests`, { fill: COLOR.coralTint, color: COLOR.coral });
   deck.text(s, MARGIN + 9.3, 3.55, W - 2 * MARGIN - 9.3, 0.9, "every column, every year", { fontSize: 14, color: COLOR.muted });
   deck.text(s, MARGIN + 6.0, 4.6, W - 2 * MARGIN - 6.0, 1.6, "Same files, about 60 times the bytes. Name the columns and filter on the partition: the rest never crosses the network.", { fontSize: 17 });

@@ -49,23 +49,13 @@ Read the plan once. The tracks are self-paced: anyone may switch track or stop e
     { t: "2.00", head: "Tour", body: "All three", w: 15, fill: COLOR.ink2 },
     { t: "2.15", head: "Track 1", body: "your first pick, 40 min", w: 40, fill: COLOR.teal },
     { t: "2.55", head: "Track 2", body: "your second pick, 40 min", w: 40, fill: COLOR.teal },
-    { t: "3.35", head: "", body: "", w: 5, fill: COLOR.line },
+    { t: "", w: 5, fill: COLOR.line },
     { t: "3.40", head: "Capstone", body: "kickoff, 10 min", w: 10, fill: COLOR.amber, dark: true },
     { t: "3.50", head: "Teams at work", body: "Driver, extract, sanity check 1", w: 35, fill: COLOR.amber, dark: true },
-    { t: "4.25", head: "", body: "", w: 5, fill: COLOR.ink2 },
+    { t: "4.25", w: 5, fill: COLOR.ink2 },
   ];
-  const total = blocks.reduce((a, b) => a + b.w, 0);
+  deck.timeline(s, blocks, { h: 1.4, end: "4.30" });
   const span = W - 2 * MARGIN;
-  let x = MARGIN;
-  blocks.forEach((b) => {
-    const bw = (b.w / total) * span;
-    s.addShape(deck.shapes.RECTANGLE, { x, y: 2.0, w: bw - 0.04, h: 1.4, fill: { color: b.fill }, line: { type: "none" } });
-    if (bw > 0.9 && b.head) deck.text(s, x + 0.12, 2.1, bw - 0.24, 0.5, b.head, { fontFace: FONT.head, fontSize: 20, bold: true, color: b.dark ? COLOR.ink : COLOR.white });
-    if (bw > 1.3 && b.body) deck.text(s, x + 0.12, 2.65, bw - 0.24, 0.65, b.body, { fontSize: 13, color: b.dark ? COLOR.ink : COLOR.white });
-    if (b.w >= 10 || b.t === "4.25") deck.text(s, x, 1.6, 1.0, 0.35, b.t, { fontSize: 13, color: COLOR.muted });
-    x += bw;
-  });
-  deck.text(s, W - MARGIN - 1.0, 3.5, 1.0, 0.35, "4.30", { fontSize: 13, color: COLOR.muted, align: "right" });
   const half = (span - 0.4) / 2;
   deck.panel(s, MARGIN, 4.3, half, 2.35, { fill: COLOR.tint });
   deck.text(s, MARGIN + 0.35, 4.45, half - 0.7, 0.5, "Extension tracks", { fontFace: FONT.head, fontSize: 21, bold: true, color: COLOR.tealDark });
@@ -247,7 +237,7 @@ Suggested roles, not enforced: the Driver holds the official pipeline and output
     deck.chip(s, x, 5.3, 2.0, 0.5, r.head, { fill: COLOR.ink, color: COLOR.white, fontFace: FONT.body, fontSize: 15 });
     deck.text(s, x + 2.15, 5.3, cw - 2.15, 0.5, r.body, { fontSize: 14, valign: "middle" });
   });
-  deck.text(s, MARGIN, 6.15, W - 2 * MARGIN, 0.45, "Suggested roles, not enforced. Everyone speaks in the presentation.", { fontSize: 14, italic: true, color: COLOR.muted });
+  deck.text(s, MARGIN, 6.15, W - 2 * MARGIN, 0.45, "Three teams, from the registration list: the facilitator reads them out now. Suggested roles, not enforced; everyone speaks.", { fontSize: 14, italic: true, color: COLOR.muted });
 }
 
 // 12. Deliverables

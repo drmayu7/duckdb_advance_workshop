@@ -483,6 +483,28 @@ class Deck {
     return size;
   }
 
+  /**
+   * A session's schedule as one bar: blocks [{ t, head, body, w, fill, dark }],
+   * each as wide as its minutes (w). A block shows its head and body only if
+   * it fits; `end` labels the bar's right end.
+   */
+  timeline(s, blocks, { y = 2.0, h = 1.3, end } = {}) {
+    const total = blocks.reduce((a, b) => a + b.w, 0);
+    const span = W - 2 * MARGIN;
+    let x = MARGIN;
+    blocks.forEach((b) => {
+      const bw = (b.w / total) * span;
+      const color = b.dark ? COLOR.ink : COLOR.white;
+      s.addShape(this.shapes.RECTANGLE, { x, y, w: bw - 0.04, h, fill: { color: b.fill }, line: { type: "none" } });
+      // A label only where it fits on one line (20 pt head, 13 pt body).
+      if (b.head && bw >= b.head.length * 0.16 + 0.25) this.text(s, x + 0.1, y + 0.1, bw - 0.2, 0.5, b.head, { fontFace: FONT.head, fontSize: 20, bold: true, color });
+      if (b.body && bw >= Math.min(b.body.length * 0.09, 1.6) + 0.25) this.text(s, x + 0.1, y + 0.6, bw - 0.2, h - 0.7, b.body, { fontSize: 13, color });
+      if (b.t) this.text(s, x, y - 0.4, 1.0, 0.35, b.t, { fontSize: 13, color: COLOR.muted });
+      x += bw;
+    });
+    if (end) this.text(s, W - MARGIN - 1.0, y + h + 0.1, 1.0, 0.35, end, { fontSize: 13, color: COLOR.muted, align: "right" });
+  }
+
   // ----- whole slides ------------------------------------------------------
 
   titleSlide({ kicker, title, subtitle, meta, notes }) {
