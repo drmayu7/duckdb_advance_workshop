@@ -82,7 +82,16 @@ The prototype script was not committed. It generates patient (dob, sex, birth st
 
 The ~100k-admission exercise size will take well under 1 s and come to about 2 MB.
 
-**Estimates for the full schema (not measured).** Adding names, addresses, free-text diagnosis and the messy string variants could roughly double to triple the bytes per row. That puts **~1.2–2 GB for 30M admissions**, inside the 3 GB budget. Generation on a typical Windows laptop with 8–16 GB RAM should take **about 1–3 minutes**. On 8 GB machines, set `memory_limit='4GB'` and a `temp_directory`. Generate the large set on the instructor machine and distribute it. Participants only query it.
+**Estimates for the full schema (not measured).** Adding names, addresses, free-text diagnosis and the messy string variants could roughly double to triple the bytes per row. That puts **~1.2–2 GB for 30M admissions**, inside the 3 GB budget. Generation on a typical Windows laptop with 8–16 GB RAM should take **about 1–3 minutes**. Generate the large set on the instructor machine and distribute it. Participants only query it.
+
+**Measured with the real generator (9 Nov, #25).** `./build.sh large` makes 30.1M admissions in about 6.5 min on the 8 GB build Mac, giving 742 MB of Parquet. A `memory_limit` and a `temp_directory` alone did **not** stop it running out of memory. Four things did, and `build_large` in `build.sh` and `generator/truth.sql` now do all four:
+
+- **A database file, not `:memory:`.** In memory, the ~35M-row intermediate tables (`a0`…`a6`) cannot be evicted.
+- **`preserve_insertion_order = false`.** With it on, the join that builds `a6` ran out of memory. Every output is written with an explicit `ORDER BY`, so the files stay byte-identical.
+- **No window over the whole table on wide rows.** A single `row_number() OVER (ORDER BY …)` across every admission column ran out of memory. Number a narrow `(key, sort columns)` table and join the number back.
+- **No per-row window across a joined lookup.** A weighted pick over every hospital in the state (admissions × hospitals rows) took two thirds of the run time. Precompute running weights per residence and ASOF-join the threshold.
+
+A scaled-down memory test (10× the small data, with a proportionally smaller limit) does not reproduce these failures, so the only real check is a full `./build.sh large`.
 
 ### Alternatives considered
 
