@@ -4,17 +4,17 @@
 # the three Hint cards and capstone_truth/ that don't. What ships must not give
 # the Held-back defects away, and a Hint card describes a symptom only.
 set -u
+# shellcheck source=tests/lib/check.sh
+. "$(dirname "$0")/lib/check.sh"
 cd "$(dirname "$0")/.." || exit 1
-fail=0
-ok()  { echo "ok: $*"; }
-bad() { echo "FAIL: $*"; fail=1; }
 banner="Synthetic data, not real hospital performance"
 
+mark
 for f in capstone/brief.md capstone/brief_template.md capstone/rubric.md capstone/score_slip.md \
          capstone/hints.md capstone/scores.csv capstone/scores.sql capstone_truth/README.md capstone_truth/check.sql; do
   [ -s "$f" ] || bad "$f is missing or empty"
 done
-[ "$fail" = 0 ] && ok "every file of the pack is there"
+failed || ok "every file of the pack is there"
 
 for f in capstone/brief.md capstone/brief_template.md capstone/rubric.md; do
   if grep -q "$banner" "$f"; then ok "$f carries the synthetic-data banner"; else bad "$f has no synthetic-data banner"; fi
@@ -53,15 +53,15 @@ else bad "hints.md cards are: $cards"; fi
 # code, cause or fix. (hints.md and capstone_truth/ never ship; the cards are
 # still symptom-only, #10.)
 spoiler='ID06|DX04|DT02|passport|non-MyKad|police|army|month first|MM/DD|free[- ]text|typed as text|norm_mykad|other_id|Queen Elizabeth'
-checked=0
+mark; checked=0
 for f in capstone/*.md; do
   checked=$((checked + 1))
   if hits="$(grep -n -i -E "$spoiler" "$f")"; then bad "$f gives a Held-back defect away:"$'\n'"$hits"; fi
 done
 [ "$checked" -ge 5 ] || bad "only $checked capstone/*.md files checked for spoilers"
-[ "$fail" = 0 ] && ok "no Capstone document or Hint card names a Held-back defect, its cause or its fix"
+failed || ok "no Capstone document or Hint card names a Held-back defect, its cause or its fix"
 
 # scores.sql runs on the committed, still-empty scores.csv.
 if out="$("$DUCKDB" -csv :memory: <capstone/scores.sql 2>&1)"; then ok "scores.sql runs on the empty scores.csv"
 else bad "scores.sql fails on the committed scores.csv: $out"; fi
-exit $fail
+finish

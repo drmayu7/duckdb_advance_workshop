@@ -44,3 +44,11 @@ A defect the Challenge teaches goes in `generator/raw.sql`:
 - Add its code to the expected list in `tests/answer_key.sql`, with asserts for where it may appear.
 
 Then `./build.sh data && ./build.sh expected`, and commit the regenerated `data/raw/`, `generator/` and `expected/` files with the change.
+
+A **Held-back defect** (Capstone only, never taught) goes in `generator/capstone.sql` instead:
+
+- It is logged in that file's own `cdq` and applied to the 2021 extract only, so the C1–C10 chain never sees it.
+- The Answer key is one file built by two scripts: `raw.sql` builds the `answer_key` table for 2018–2020, and `capstone.sql` adds the 2021 rows and writes `generator/dq_answer_key.parquet`. Running `raw.sql` alone gives an incomplete Answer key.
+- Its fix goes in `capstone_truth/reference/`, and its Angle in `tests/capstone_defects.sh`.
+
+**Before writing a defect's tests, measure which way it moves its Angle.** Run the reference pipeline with the defect in and without its fix (`capstone_truth/README.md`, "The reference pipeline"). Check that the Angle's figure moves the way the ticket says. When it moves the other way, record that on the ticket that decided it before building on it. ID06 was decided as "false readmissions", but it removes readmissions, and that only came out after the build (#10).

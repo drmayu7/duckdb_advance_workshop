@@ -4,13 +4,12 @@
 # earlier Checkpoints, in a bundle folder), the card's export check gives 0 and
 # 0, the Excel file reads back, and a broken export does not pass.
 set -u
+# shellcheck source=tests/lib/check.sh
+. "$(dirname "$0")/lib/check.sh"
 root="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$root" || exit 1
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
-fail=0
-ok()  { echo "ok: $*"; }
-bad() { echo "FAIL: $*"; fail=1; }
 
 # shellcheck source=tools/cards.sh
 source tools/cards.sh
@@ -45,4 +44,4 @@ else
   got="$("$DUCKDB" -list -noheader work.duckdb -c "$check" 2>&1)"
   if [ "$got" = "32|1" ]; then ok "$c10: export check catches a changed Parquet and a short CSV"; else bad "$c10: broken export gave '$got', want 32|1"; fi
 fi
-exit $fail
+finish

@@ -6,19 +6,18 @@
 # morning Content id. The committed handouts match a fresh build, and no deck
 # shows the repo URL. The design itself gets the pptx skill's visual QA.
 set -u
+# shellcheck source=tests/lib/check.sh
+. "$(dirname "$0")/lib/check.sh"
 root="$(cd "$(dirname "$0")/.." && pwd)"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
-fail=0
-ok()  { echo "ok: $*"; }
-bad() { echo "FAIL: $*"; fail=1; }
 # shellcheck source=tools/cards.sh
 source "$root/tools/cards.sh"
 
 decks=(refresher m1 m2)
 id=20261110-2100
 if ! (cd "$root" && CONTENT_ID="$id" HANDOUTS_DIR="$tmp/handouts" ./build.sh slides) >"$tmp/build.log" 2>&1; then
-  bad "build.sh slides failed:"; sed 's/^/  /' "$tmp/build.log"; exit 1
+  bad "build.sh slides failed:"; sed 's/^/  /' "$tmp/build.log"; finish
 fi
 
 # xml_text: the text of one slide or notes part, one line per paragraph or line
@@ -120,4 +119,4 @@ for deck in "${decks[@]}"; do
   done
 done
 [ "$leaked" = 0 ] && ok "no deck shows the repo URL or name"
-exit $fail
+finish
