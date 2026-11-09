@@ -1,7 +1,9 @@
 -- Clean truth for the MyHDW-like dataset (ADR 0001, #7): `patient` and `admission`,
 -- 2017–2021. Pure DuckDB 1.5.6 SQL, run by `build.sh data` from the output root
 -- (which has data/open/ and generator/names.csv). Every random draw is a hash of
--- the row's key and a salt, so two runs give identical tables.
+-- the row's key and a salt, so two runs give identical tables. The `patients`
+-- variable sets the scale (default 58000); `build.sh large` sets it to ~16.6M,
+-- and since every draw is per patient, a bigger run keeps the small run's patients.
 --
 -- Invariants (tested in tests/generator_invariants.sql):
 --   * a patient never has two admissions on the same day, and stays never overlap;
@@ -10,7 +12,9 @@
 --     place-of-birth state code, G is odd for males (ADR 0003);
 --   * state/district are the patient's residence, in MoH health-district names.
 .bail on
-SET preserve_insertion_order = true;
+-- build.sh large turns this off: at 30M admissions, keeping insertion order
+-- runs an 8 GB laptop out of memory. Nothing here depends on it.
+SET preserve_insertion_order = coalesce(getvariable('preserve_insertion_order'), true);
 
 -- u(...): a uniform draw in [0, 1) from the hash of a key and a salt.
 CREATE MACRO u(k, salt) AS (hash(k, salt) % 1000000)::DOUBLE / 1000000;
@@ -121,7 +125,7 @@ SELECT i AS patient_id,
             WHEN x < 0.85 THEN 'obstetric' WHEN x < 0.92 THEN 'injury'
             ELSE 'surgical' END AS profile,
        u(i, 'state') AS u_state, u(i, 'district') AS u_district, u(i, 'age') AS ua
-FROM (SELECT i, u(i, 'profile') AS x FROM range(1, 58001) t(i));
+FROM (SELECT i, u(i, 'profile') AS x FROM range(1, coalesce(getvariable('patients'), 58000) + 1) t(i));
 
 CREATE TABLE p1 AS
 SELECT p0.*, s.state, s.hospitals,
@@ -287,37 +291,56 @@ FROM t WINDOW w AS (PARTITION BY patient_id ORDER BY k);
 
 -- Facility: a hospital in the residence state, weighted by size and 8x for the
 -- patient's own district. A transfer goes to another hospital, usually a referral one.
-CREATE TABLE pick_home AS
-SELECT patient_id, k,
-       arg_min(facility_code, cum) FILTER (cum > threshold) AS facility_code
-FROM (
-  SELECT a.patient_id, a.k, h.facility_code,
-         sum(h.size_weight * CASE WHEN h.district = a.district THEN 8 ELSE 1 END)
-           OVER (PARTITION BY a.patient_id, a.k ORDER BY h.facility_code) AS cum,
-         floor(uk(a.patient_id, a.k, 'facility')
-               * sum(h.size_weight * CASE WHEN h.district = a.district THEN 8 ELSE 1 END)
-                   OVER (PARTITION BY a.patient_id, a.k)) AS threshold
-  FROM a5 a JOIN ref_hospital h ON h.state = a.state
+-- Each pick is the first hospital, in facility_code order, whose running weight
+-- passes floor(draw x total weight). The running weights depend only on the
+-- residence (or, for a transfer, the hospital it leaves), so they are worked out
+-- once per residence and each admission finds its hospital with an ASOF join;
+-- that keeps the large dataset (build.sh large) linear in the admissions.
+CREATE TABLE home_weight AS
+WITH w AS (
+  SELECT d.state, d.district, h.facility_code,
+         h.size_weight * CASE WHEN h.district = d.district THEN 8 ELSE 1 END AS w
+  FROM (SELECT DISTINCT state, district FROM a5) d JOIN ref_hospital h ON h.state = d.state
 )
-GROUP BY ALL;
+SELECT state, district, facility_code,
+       sum(w) OVER (PARTITION BY state, district ORDER BY facility_code) - w AS cum_before,
+       sum(w) OVER (PARTITION BY state, district) AS total
+FROM w;
+
+CREATE TABLE pick_home AS
+WITH a AS (
+  SELECT a5.patient_id, a5.k, a5.state, a5.district,
+         floor(uk(a5.patient_id, a5.k, 'facility') * t.total) AS threshold
+  FROM a5 JOIN (SELECT DISTINCT state, district, total FROM home_weight) t USING (state, district)
+)
+SELECT a.patient_id, a.k, w.facility_code
+FROM a ASOF JOIN home_weight w
+  ON w.state = a.state AND w.district = a.district AND a.threshold >= w.cum_before;
+
+CREATE TABLE transfer_weight AS
+WITH w AS (
+  SELECT f.facility_code AS from_code, f.state, h.facility_code,
+         h.size_weight * CASE WHEN h.is_referral THEN 4 ELSE 1 END AS w
+  FROM ref_hospital f JOIN ref_hospital h ON h.state = f.state AND h.facility_code <> f.facility_code
+)
+SELECT from_code, state, facility_code,
+       sum(w) OVER (PARTITION BY from_code ORDER BY facility_code) - w AS cum_before,
+       sum(w) OVER (PARTITION BY from_code) AS total
+FROM w;
 
 CREATE TABLE pick_transfer AS
 WITH a AS (
-  SELECT a5.patient_id, a5.k, a5.state, prev.facility_code AS from_code
-  FROM a5 JOIN pick_home prev ON prev.patient_id = a5.patient_id AND prev.k = a5.k - 1
+  SELECT a5.patient_id, a5.k, prev.facility_code AS from_code,
+         floor(uk(a5.patient_id, a5.k, 'to') * t.total) AS threshold
+  FROM a5
+  JOIN pick_home prev ON prev.patient_id = a5.patient_id AND prev.k = a5.k - 1
+  JOIN (SELECT DISTINCT from_code, state, total FROM transfer_weight) t
+    ON t.from_code = prev.facility_code AND t.state = a5.state
   WHERE a5.is_transfer
 )
-SELECT patient_id, k, arg_min(facility_code, cum) FILTER (cum > threshold) AS facility_code
-FROM (
-  SELECT a.patient_id, a.k, h.facility_code,
-         sum(h.size_weight * CASE WHEN h.is_referral THEN 4 ELSE 1 END)
-           OVER (PARTITION BY a.patient_id, a.k ORDER BY h.facility_code) AS cum,
-         floor(uk(a.patient_id, a.k, 'to')
-               * sum(h.size_weight * CASE WHEN h.is_referral THEN 4 ELSE 1 END)
-                   OVER (PARTITION BY a.patient_id, a.k)) AS threshold
-  FROM a JOIN ref_hospital h ON h.state = a.state AND h.facility_code <> a.from_code
-)
-GROUP BY ALL;
+SELECT a.patient_id, a.k, w.facility_code
+FROM a ASOF JOIN transfer_weight w
+  ON w.from_code = a.from_code AND a.threshold >= w.cum_before;
 
 CREATE TABLE a6 AS
 SELECT a5.*, coalesce(t.facility_code, h.facility_code) AS facility_code,
@@ -327,6 +350,13 @@ FROM a5
 JOIN pick_home h USING (patient_id, k)
 LEFT JOIN pick_transfer t USING (patient_id, k)
 JOIN ref_dx d ON d.grp = a5.grp;
+
+-- admission_id follows admit_ts (a patient never has two admissions at one
+-- time). Numbered on a narrow table: one window over every wide admission row
+-- does not fit in memory at the large scale.
+CREATE TABLE admission_order AS
+SELECT patient_id, k, row_number() OVER (ORDER BY admit_ts, patient_id) AS admission_id
+FROM a6;
 
 CREATE TABLE admission AS
 WITH s AS (
@@ -339,7 +369,7 @@ WITH s AS (
           THEN pick(['A09.9', 'N39.0', 'J18.9'], uk(patient_id, k, 's3c')) END] AS cand_dx
   FROM a6
 )
-SELECT row_number() OVER (ORDER BY admit_ts, patient_id) AS admission_id,
+SELECT o.admission_id,
        patient_id,
        'RN' || lpad(((patient_id * 7919 + hash(facility_code) % 10000000) % 10000000)::VARCHAR, 7, '0') AS mrn,
        facility_code, admit_ts, discharge_ts, principal_dx,
@@ -363,7 +393,7 @@ SELECT row_number() OVER (ORDER BY admit_ts, patient_id) AS admission_id,
        CASE WHEN is_transfer THEN 'TRANSFER'
             WHEN grp IN ('surgical', 'obstetric') AND uk(patient_id, k, 'elective') < 0.4 THEN 'ELECTIVE'
             ELSE 'EMERGENCY' END AS admission_type
-FROM s;
+FROM s JOIN admission_order o USING (patient_id, k);
 
 ALTER TABLE patient DROP COLUMN profile;
 ALTER TABLE patient DROP COLUMN age;

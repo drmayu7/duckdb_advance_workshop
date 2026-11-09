@@ -23,6 +23,13 @@ Targets:
   expected    Run every Challenge solution in chain order (w, c01..c10, t-*)
               in one fresh Work database and write expected/<output>.parquet
               (OUT_DIR overrides where expected/ is written)
+  large       Generate the large dataset: ~30M clean 2018-2021 admissions in
+              large/ (Hive-partitioned by year, never committed) and the
+              take-home zip dist/duckdb-large-2018-2021.zip; takes minutes
+              (LARGE_PATIENTS sets the scale, OUT_DIR and DIST_DIR the folders)
+  large-upload
+              Upload large/ to s3://duckdb-series2-2026/large/ (needs a live
+              AWS SSO login: aws sso login --profile naufal; AWS_PROFILE overrides)
   open-data   Re-download the frozen open data into data/open/ (needs network)
   setup       Build the Setup release dist/duckdb-bundle-YYYYMMDD.zip
               (first run needs network to fill .cache/setup/; DIST_DIR and
@@ -112,6 +119,55 @@ build_data() {
   fi
   cat generator/truth.sql generator/warmup.sql generator/raw.sql | (cd "$out" && "$DUCKDB" :memory:)
   echo "build.sh: wrote $out/generator/truth/, $out/generator/dq_answer_key.parquet, $out/data/warmup/ and $out/data/raw/"
+}
+
+# large: the large dataset (#25), the truth's generator at ~300x the small scale.
+# It runs in a scratch root (the truth it also writes there is thrown away) and
+# moves large/ to OUT_DIR. Its tables live in a scratch database file, not in
+# memory: in-memory, the ~35M-row intermediate tables ran an 8 GB laptop out of
+# memory. The memory limit stays well below the machine's, and sorts spill.
+LARGE_BUCKET="s3://duckdb-series2-2026/large/"
+build_large() {
+  local out="${OUT_DIR:-.}" dist="${DIST_DIR:-dist}" patients="${LARGE_PATIENTS:-16585000}" work repo y zip
+  repo="$(pwd)"
+  [[ "$patients" =~ ^[0-9]+$ ]] || { echo "build.sh: LARGE_PATIENTS must be a number, not '$patients'" >&2; return 1; }
+  mkdir -p "$out" "$dist"
+  out="$(cd "$out" && pwd)"
+  work="$(mktemp -d)"
+  trap 'rm -rf "$work"' RETURN
+  mkdir -p "$work/data" "$work/generator/truth" "$work/large"
+  ln -s "$repo/data/open" "$work/data/open"
+  cp generator/names.csv "$work/generator/names.csv"
+  for y in 2018 2019 2020 2021; do mkdir -p "$work/large/admission/year=$y"; done
+  {
+    echo "SET VARIABLE patients = $patients;"
+    echo "SET VARIABLE preserve_insertion_order = false;"
+    echo "SET temp_directory = '$work/spill';"
+    echo "SET memory_limit = '4GB';"
+    cat generator/truth.sql generator/large.sql
+  } | (cd "$work" && "$DUCKDB" large.duckdb)
+  cp generator/large-README.txt "$work/large/README.txt"
+  rm -rf "$out/large"
+  mv "$work/large" "$out/large"
+  echo "build.sh: wrote $out/large/ ($("$DUCKDB" :memory: -list -noheader -c \
+    "SELECT format('{:,}', count(*)) FROM '$out/large/admission/*/*.parquet'") admissions)"
+
+  # Parquet is already zstd-compressed, so the zip only stores it.
+  zip="$(cd "$dist" && pwd)/duckdb-large-2018-2021.zip"
+  rm -f "$zip"
+  (cd "$out" && zip -q -r -X -0 "$zip" large -x '*.DS_Store')
+  echo "build.sh: wrote $zip"
+}
+
+# large-upload: large/ to the private bucket (#13, #25), with the facilitator's
+# SSO profile. Only the dataset goes up (#13's layout): not README.txt, and the
+# demo's CSV is written outside large/ anyway.
+upload_large() {
+  local out="${OUT_DIR:-.}" profile="${AWS_PROFILE:-naufal}"
+  [ -f "$out/large/patient.parquet" ] || { echo "build.sh: no $out/large/ (run ./build.sh large first)" >&2; return 1; }
+  aws s3 sync "$out/large/" "$LARGE_BUCKET" --profile "$profile" --no-progress --exclude '*' \
+    --include 'admission/year=*/part-*.parquet' --include 'patient.parquet'
+  aws s3 ls "$LARGE_BUCKET" --recursive --human-readable --summarize --profile "$profile"
 }
 
 # Challenge-card readers: challenge_cards, card_field, card_block, sql_cell.
@@ -231,6 +287,8 @@ case "${1:-help}" in
   test)      shift; run_tests "$@" ;;
   data)      build_data ;;
   expected)  build_expected ;;
+  large)     build_large ;;
+  large-upload) upload_large ;;
   open-data) bash tools/fetch_open_data.sh ;;
   setup)     build_setup ;;
   cards)     build_cards ;;
