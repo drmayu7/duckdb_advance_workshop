@@ -14,4 +14,5 @@ The facilitator chose this for design quality. A generic Markdown-to-PPTX conver
 
 - Repo content is still single-sourced where it matters: deck scripts read demo SQL from `demos/<deck>/*.sql`, and Challenge slides read each card's front-matter (`id`, `title`, `module`, `timebox`, `input`, `output`). A card's text is never copied into a deck.
 - Framing, diagrams and callouts live only in the deck script. A typo fix in that text is a JavaScript edit.
+- Speaker notes and Reveal points may name a card's key definitions as talking points (C4's date formats, C6's IC format). Only the card's own text is off-limits. If a card's definition changes, its deck's notes need the same edit, and no test catches it.
 - The build machine needs Node with pinned `pptxgenjs`, plus LibreOffice for the skill's render-and-inspect QA.
