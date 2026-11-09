@@ -17,9 +17,11 @@ Targets:
               Run every check in tests/ and report pass/fail, or only the
               named ones (e.g. ./build.sh test answer_key solution_chain.sh)
   data        Generate the clean truth (generator/truth/), the Warm-up
-              extract (data/warmup/), the 2018-2020 Raw extract (data/raw/)
-              and its Answer key (generator/dq_answer_key.parquet) from
-              data/open/ (OUT_DIR overrides the output root)
+              extract (data/warmup/), the 2018-2020 Raw extract (data/raw/),
+              the 2021 Capstone extract (data/capstone/), their Answer key
+              (generator/dq_answer_key.parquet) and the Capstone's true
+              figures (capstone_truth/*.parquet) from data/open/ (OUT_DIR
+              overrides the output root)
   expected    Run every Challenge solution in chain order (w, c01..c10, t-*)
               in one fresh Work database and write expected/<output>.parquet
               (OUT_DIR overrides where expected/ is written)
@@ -137,14 +139,14 @@ run_tests() {
 build_data() {
   local out="${OUT_DIR:-.}" repo
   repo="$(pwd)"
-  mkdir -p "$out/generator/truth" "$out/data/warmup" "$out/data/raw"
+  mkdir -p "$out/generator/truth" "$out/data/warmup" "$out/data/raw" "$out/data/capstone" "$out/capstone_truth"
   out="$(cd "$out" && pwd)"
   if [ "$out" != "$repo" ]; then
     [ -e "$out/data/open" ] || ln -s "$repo/data/open" "$out/data/open"
     cp generator/names.csv "$out/generator/names.csv"
   fi
-  cat generator/truth.sql generator/warmup.sql generator/raw.sql | (cd "$out" && "$DUCKDB" :memory:)
-  echo "build.sh: wrote $out/generator/truth/, $out/generator/dq_answer_key.parquet, $out/data/warmup/ and $out/data/raw/"
+  cat generator/truth.sql generator/warmup.sql generator/raw.sql generator/capstone.sql | (cd "$out" && "$DUCKDB" :memory:)
+  echo "build.sh: wrote $out/generator/truth/, $out/generator/dq_answer_key.parquet, $out/data/warmup/, $out/data/raw/, $out/data/capstone/ and $out/capstone_truth/"
 }
 
 # large: the large dataset (#25), the truth's generator at ~300x the small scale.

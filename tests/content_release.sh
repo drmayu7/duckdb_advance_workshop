@@ -36,6 +36,15 @@ else
 fi
 if grep -q '^cards/w-warmup\.md$' "$tmp/got"; then ok "the Warm-up card is in the release"; else bad "no Warm-up card"; fi
 
+# The Capstone (#31): the brief and the 2021 extract ship; capstone_truth/ and
+# the Hint cards exist in the tree it is built from, and stay out.
+for f in capstone/brief.md capstone/brief_template.md capstone/rubric.md data/capstone/manifest.csv data/capstone/2021-01-sabah.csv data/capstone/2021-01.parquet; do
+  grep -qx "$f" "$tmp/got" || bad "the Capstone file $f is not in the release"
+done
+[ "$fail" = 0 ] && ok "the Capstone brief, rubric, template and 2021 extract are in the release"
+for f in capstone/hints.md capstone_truth/readmit_2021.parquet capstone_truth/check.sql; do
+  [ -n "$(git -C "$root" ls-tree --name-only "$ref" -- "$f")" ] || bad "$f is not in the tree, so its absence proves nothing"
+done
 if never="$(grep -E '^(bin|repo|generator|capstone_truth)/|^start-workshop\.|^install\.sql$|\.duckdb$|^capstone/hints\.md$|^updates/' "$tmp/got")"; then
   bad "release holds paths it must never hold: $(xargs <<<"$never")"
 else
