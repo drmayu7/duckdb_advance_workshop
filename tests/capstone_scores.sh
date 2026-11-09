@@ -4,12 +4,11 @@
 # per-criterion averages live in DuckDB at 2.45. It also lists any row that
 # can't be right (a score outside 1-4, or a team scoring itself).
 set -u
+# shellcheck source=tests/lib/check.sh
+. "$(dirname "$0")/lib/check.sh"
 root="$(cd "$(dirname "$0")/.." && pwd)"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
-fail=0
-ok()  { echo "ok: $*"; }
-bad() { echo "FAIL: $*"; fail=1; }
 
 want_header="slip,scorer_team,team,answer,dq_story,pipeline,communication,did_well"
 got_header="$(head -1 "$root/capstone/scores.csv" | tr -d '\r')"
@@ -52,4 +51,4 @@ out="$(run)"
 if grep -q "team scored itself" <<<"$out" && grep -q "score outside 1-4" <<<"$out"; then
   ok "lists a team scoring itself and a score outside 1-4"
 else bad "bad rows not listed:"$'\n'"$out"; fi
-exit $fail
+finish

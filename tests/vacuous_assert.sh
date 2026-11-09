@@ -3,12 +3,11 @@
 # a check over a set can't pass vacuously (CODING_STANDARDS.md, "Tests"; #30's
 # retro). It runs build.sh's own harness on small test files in a scratch copy.
 set -u
+# shellcheck source=tests/lib/check.sh
+. "$(dirname "$0")/lib/check.sh"
 root="$(cd "$(dirname "$0")/.." && pwd)"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
-fail=0
-ok()  { echo "ok: $*"; }
-bad() { echo "FAIL: $*"; fail=1; }
 indent() { sed 's/^/  /'; }
 
 mkdir -p "$tmp/tests/lib" "$tmp/tools"
@@ -40,4 +39,4 @@ if grep -q '^FAIL  vacuous.sql' <<<"$out"; then ok "a test with a check that ret
 else bad "a vacuous check passed:"; indent <<<"$out"; fi
 if grep -q "returned no rows: SELECT assert_eq('three rows, said to be five'" <<<"$out"; then ok "the failure names the check"
 else bad "the failure does not name the vacuous check:"; indent <<<"$out"; fi
-exit $fail
+finish

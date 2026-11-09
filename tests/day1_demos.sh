@@ -4,12 +4,11 @@
 # the bundle root, on DuckDB 1.5.6, without an error.
 # csv-vs-parquet.sql needs large/ and runs in large_dataset.sh.
 set -u
+# shellcheck source=tests/lib/check.sh
+. "$(dirname "$0")/lib/check.sh"
 root="$(cd "$(dirname "$0")/.." && pwd)"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
-fail=0
-ok()  { echo "ok: $*"; }
-bad() { echo "FAIL: $*"; fail=1; }
 
 for deck in refresher m1 m2; do
   n=0
@@ -29,4 +28,4 @@ for deck in refresher m1 m2; do
   done
   if [ "$n" -gt 0 ]; then ok "demos/$deck has $n demo(s)"; else bad "demos/$deck has no demo"; fi
 done
-exit $fail
+finish

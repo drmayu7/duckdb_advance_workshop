@@ -2,10 +2,11 @@
 # The generator is deterministic: two runs of `build.sh data` write byte-identical
 # files, and the committed generated data is what the generator writes today.
 set -u
+# shellcheck source=tests/lib/check.sh
+. "$(dirname "$0")/lib/check.sh"
 root="$(cd "$(dirname "$0")/.." && pwd)"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
-fail=0
 
 # Every file the generator must write, relative to the output root.
 outputs="generator/truth/patient.parquet
@@ -30,13 +31,13 @@ max_seconds=20
 for run in a b; do
   start=$SECONDS
   if ! OUT_DIR="$tmp/$run" "$root/build.sh" data >"$tmp/$run.log" 2>&1; then
-    echo "FAIL: build.sh data (run $run) exited non-zero:"; sed 's/^/  /' "$tmp/$run.log"; exit 1
+    bad "build.sh data (run $run) exited non-zero:"; sed 's/^/  /' "$tmp/$run.log"; finish
   fi
   took=$((SECONDS - start))
   if [ "$took" -gt "$max_seconds" ]; then
-    echo "FAIL: build.sh data (run $run) took ${took}s, over ${max_seconds}s: profile the generator with .timer on"; fail=1
+    bad "build.sh data (run $run) took ${took}s, over ${max_seconds}s: profile the generator with .timer on"
   else
-    echo "ok: build.sh data (run $run) took ${took}s"
+    ok "build.sh data (run $run) took ${took}s"
   fi
 done
 
@@ -45,19 +46,20 @@ sums() { # sums <dir>: sha256 of every generated file, by relative path
 }
 
 while read -r f; do
-  if [ -f "$tmp/a/$f" ]; then echo "ok: generator writes $f"; else echo "FAIL: generator did not write $f"; fail=1; fi
+  if [ -f "$tmp/a/$f" ]; then ok "generator writes $f"; else bad "generator did not write $f"; fi
 done <<<"$outputs"
 
 if [ "$(sums "$tmp/a")" = "$(sums "$tmp/b")" ]; then
-  echo "ok: two generator runs are byte-identical"
+  ok "two generator runs are byte-identical"
 else
-  echo "FAIL: two generator runs differ:"; diff <(sums "$tmp/a") <(sums "$tmp/b") | sed 's/^/  /'; fail=1
+  bad "two generator runs differ:"; diff <(sums "$tmp/a") <(sums "$tmp/b") | sed 's/^/  /'
 fi
 
+mark
 while read -r f; do
   if ! cmp -s "$tmp/a/$f" "$root/$f"; then
-    echo "FAIL: committed $f is stale or missing (run ./build.sh data)"; fail=1
+    bad "committed $f is stale or missing (run ./build.sh data)"
   fi
 done <<<"$outputs"
-[ "$fail" = 0 ] && echo "ok: committed generated data is up to date"
-exit $fail
+failed || ok "committed generated data is up to date"
+finish

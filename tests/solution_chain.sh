@@ -7,12 +7,11 @@
 # committed expected/ is what `build.sh expected` writes today, and writing it
 # leaves the repo's working tree untouched.
 set -u
+# shellcheck source=tests/lib/check.sh
+. "$(dirname "$0")/lib/check.sh"
 root="$(cd "$(dirname "$0")/.." && pwd)"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
-fail=0
-ok()  { echo "ok: $*"; }
-bad() { echo "FAIL: $*"; fail=1; }
 
 # shellcheck source=tools/cards.sh
 source "$root/tools/cards.sh"
@@ -105,14 +104,15 @@ if OUT_DIR="$tmp/fresh" ./build.sh expected >"$tmp/expected.log" 2>&1; then
   after="$(git status --porcelain --untracked-files=all)"
   if [ "$before" = "$after" ]; then ok "build.sh expected leaves the repo's working tree as it was"
   else bad "build.sh expected changed the repo's working tree:"; diff <(echo "$before") <(echo "$after") | sed 's/^/  /'; fi
+  mark
   for f in expected/*.parquet; do
     cmp -s "$f" "$tmp/fresh/$f" || bad "committed $f differs from what build.sh expected writes (rebuild it)"
   done
   for f in "$tmp"/fresh/expected/*.parquet; do
     [ -e "expected/$(basename "$f")" ] || bad "build.sh expected writes $(basename "$f"), which is not committed"
   done
-  [ "$fail" = 0 ] && ok "committed expected/ matches build.sh expected"
+  failed || ok "committed expected/ matches build.sh expected"
 else
   bad "build.sh expected failed:"; sed 's/^/  /' "$tmp/expected.log"
 fi
-exit $fail
+finish

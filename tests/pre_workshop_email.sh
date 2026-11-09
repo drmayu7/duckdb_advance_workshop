@@ -4,23 +4,22 @@
 # Participant reads them (#19). The email is rendered by `build.sh email`; its
 # steps 3-5 and Mac block come from the setup card, so the text is written once.
 set -u
+# shellcheck source=tests/lib/check.sh
+. "$(dirname "$0")/lib/check.sh"
 root="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$root" || exit 1
 DUCKDB="${DUCKDB:-duckdb}"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
-fail=0
-bad() { echo "FAIL: $*"; fail=1; }
-ok() { echo "ok: $*"; }
 
 card=cards/setup.md
 
 if ! DIST_DIR="$tmp" BUNDLE_DATE=20261109 DRIVE_LINK='https://drive.example/folder?usp=sharing&x=1' \
      ./build.sh email >"$tmp/build.log" 2>&1; then
-  bad "build.sh email failed:"; sed 's/^/  /' "$tmp/build.log"; exit 1
+  bad "build.sh email failed:"; sed 's/^/  /' "$tmp/build.log"; finish
 fi
 email="$tmp/pre-workshop-email.md"
-[ -f "$email" ] || { bad "no $email"; exit 1; }
+[ -f "$email" ] || { bad "no $email"; finish; }
 
 # ---- Six numbered steps, in order ------------------------------------------
 steps="$(grep -oE '^[0-9]+\. ' "$email" | tr -d '. ' | xargs)"
@@ -72,6 +71,7 @@ if grep -qE '\{\{|<!--' "$email"; then bad "email has an unfilled placeholder or
 else ok "email has no placeholders or comments left"; fi
 
 # ---- Fix sheet: a row for every banner code, plus the non-code rows (#11) --
+mark
 fix="$(awk '/^## Fix sheet/ { f = 1 } f' "$card")"
 row() { grep -E "^\| [^|]*$1" <<<"$fix" >/dev/null; } # $1 in a row's first cell
 # The decided codes, plus any code the setup check can print; every E-<ext>
@@ -86,7 +86,7 @@ for p in 'UI won.t load' 'Windows on ARM' 'Mac \(Apple Silicon\)' 'Intel Mac' \
     'No bundle' 'no admin rights'; do
   row "$p" || bad "Fix sheet has no row for: $p"
 done
-[ "$fail" = 0 ] && ok "Fix sheet has a row for every banner code and every non-code problem"
+failed || ok "Fix sheet has a row for every banner code and every non-code problem"
 if grep -qF 'Relaunching? Close the DuckDB UI tab and window first.' <<<"$fix"; then
   ok "Fix sheet has the relaunch line"
 else bad "Fix sheet lacks 'Relaunching? Close the DuckDB UI tab and window first.'"; fi
@@ -126,4 +126,4 @@ if leaks="$(grep -l -i -e 'drmayu7' -e 'duckdb_advance_workshop' -e 'duckdb-adva
   bad "repo URL or name found in: $leaks"
 else ok "no repo URL or name in the card or the email"; fi
 
-exit $fail
+finish

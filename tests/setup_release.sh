@@ -5,6 +5,8 @@
 # names every fault. Windows is checked by hand (#20).
 # Needs network the first time, to fill .cache/setup/ (see tools/fetch_setup_deps.sh).
 set -u
+# shellcheck source=tests/lib/check.sh
+. "$(dirname "$0")/lib/check.sh"
 root="$(cd "$(dirname "$0")/.." && pwd)"
 if [ "$(uname -sm)" != "Darwin arm64" ]; then
   echo "SKIP: the launcher test runs on an Apple Silicon Mac only"; exit 0
@@ -18,18 +20,16 @@ cleanup() {
   rm -rf "$tmp"
 }
 trap cleanup EXIT
-fail=0
-bad() { echo "FAIL: $*"; fail=1; }
 
 EXTS="ui httpfs aws spatial excel stats_duck rapidfuzz splink_udfs gsheets"
 N=15 # V1, nine E-<ext>, D1, W1, W2, F1, U1
 
 # ---- Seam 1: release contents ----------------------------------------------
 if ! DIST_DIR="$tmp/dist" BUNDLE_DATE=20261109 "$root/build.sh" setup >"$tmp/build.log" 2>&1; then
-  bad "build.sh setup failed:"; sed 's/^/  /' "$tmp/build.log"; exit 1
+  bad "build.sh setup failed:"; sed 's/^/  /' "$tmp/build.log"; finish
 fi
 zip="$tmp/dist/duckdb-bundle-20261109.zip"
-[ -f "$zip" ] || { bad "no $zip"; exit 1; }
+[ -f "$zip" ] || { bad "no $zip"; finish; }
 
 {
   printf '%s\n' README.txt install.sql smoke_test.sql start-workshop.bat \
@@ -42,7 +42,7 @@ zip="$tmp/dist/duckdb-bundle-20261109.zip"
 } | sort >"$tmp/want"
 zipinfo -1 "$zip" | grep -v '/$' | sort >"$tmp/got"
 if diff -q "$tmp/want" "$tmp/got" >/dev/null; then
-  echo "ok: zip has exactly the decided paths"
+  ok "zip has exactly the decided paths"
 else
   bad "zip paths differ (< missing, > unexpected):"; diff "$tmp/want" "$tmp/got" | grep '^[<>]' | sed 's/^/  /'
 fi
@@ -50,14 +50,14 @@ fi
 pristine="$tmp/pristine"
 mkdir -p "$pristine" && ditto -x -k "$zip" "$pristine"
 if [ "$(grep -c $'\r$' "$pristine/start-workshop.bat")" = "$(wc -l <"$pristine/start-workshop.bat" | tr -d ' ')" ]; then
-  echo "ok: start-workshop.bat has CRLF line endings"
+  ok "start-workshop.bat has CRLF line endings"
 else
   bad "start-workshop.bat is not CRLF throughout (cmd.exe misreads LF batch files)"
 fi
 if leaks="$(grep -r -l -i -e 'drmayu7' -e 'duckdb_advance_workshop' -e 'duckdb-advance-workshop' "$pristine")"; then
   bad "repo URL or name found in: $leaks"
 else
-  echo "ok: no repo URL or name in any file"
+  ok "no repo URL or name in any file"
 fi
 
 # ---- Seam 2: launcher in check-only mode -----------------------------------
@@ -80,10 +80,10 @@ expect() { # expect <label> <passed count> <codes>
   local want_codes="$3" want_rc=1
   [ -z "$want_codes" ] && want_rc=0
   if [ -z "$want_codes" ] && [ "$banner" = "SETUP OK ($N/$N) · Content none" ] && [ "$rc" = 0 ]; then
-    echo "ok: $1: $banner"
+    ok "$1: $banner"
   elif [ -n "$want_codes" ] && [ "$(codes)" = "$want_codes" ] && [ "$rc" = "$want_rc" ] \
        && [[ "$banner" == "SETUP FAILED ($2/$N): "* ]]; then
-    echo "ok: $1: $want_codes"
+    ok "$1: $want_codes"
   else
     bad "$1: wanted ${want_codes:-OK} ($2/$N) exit $want_rc, got exit $rc, banner: ${banner:-<none>}"
   fi
@@ -91,7 +91,7 @@ expect() { # expect <label> <passed count> <codes>
 
 fresh clean; launch
 expect "clean extract" $N ""
-if [ -f "$b/setup.log" ]; then echo "ok: errors go to setup.log"; else bad "clean extract: no setup.log"; fi
+if [ -f "$b/setup.log" ]; then ok "errors go to setup.log"; else bad "clean extract: no setup.log"; fi
 for e in $EXTS; do
   [ -f "$h/.duckdb/extensions/v1.5.6/osx_arm64/$e.duckdb_extension" ] || bad "clean extract: $e not installed per-user"
 done
@@ -130,4 +130,4 @@ done
 
 fresh several Documents; rm -rf "$b/data/open"; rm "$b/repo/v1.5.6/osx_arm64/excel.duckdb_extension.gz"; launch
 expect "several faults" 12 "D1 E-excel F1"
-exit $fail
+finish

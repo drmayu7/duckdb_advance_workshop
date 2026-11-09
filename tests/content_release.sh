@@ -5,22 +5,21 @@
 # the zip, a self-contained cards.html, and no repo URL. Applying it on a laptop
 # is tested in content_launcher.sh.
 set -u
+# shellcheck source=tests/lib/check.sh
+. "$(dirname "$0")/lib/check.sh"
 root="$(cd "$(dirname "$0")/.." && pwd)"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
-fail=0
 # shellcheck source=tests/lib/worktree_ref.sh
 source "$root/tests/lib/worktree_ref.sh"
-ref="$(worktree_ref "$root")" || { echo "FAIL: could not snapshot the working tree"; exit 1; }
-ok()  { echo "ok: $*"; }
-bad() { echo "FAIL: $*"; fail=1; }
+ref="$(worktree_ref "$root")" || { bad "could not snapshot the working tree"; finish; }
 
 id=20261110-2100
 if ! DIST_DIR="$tmp/dist" CONTENT_ID="$id" CONTENT_REF="$ref" "$root/build.sh" content >"$tmp/build.log" 2>&1; then
-  bad "build.sh content failed:"; sed 's/^/  /' "$tmp/build.log"; exit 1
+  bad "build.sh content failed:"; sed 's/^/  /' "$tmp/build.log"; finish
 fi
 zip="$tmp/dist/duckdb-content-$id.zip"
-[ -f "$zip" ] || { bad "no $zip"; exit 1; }
+[ -f "$zip" ] || { bad "no $zip"; finish; }
 
 # The decided content paths, as committed at HEAD, plus the four built files.
 {
@@ -38,10 +37,11 @@ if grep -q '^cards/w-warmup\.md$' "$tmp/got"; then ok "the Warm-up card is in th
 
 # The Capstone (#31): the brief and the 2021 extract ship; capstone_truth/ and
 # the Hint cards exist in the tree it is built from, and stay out.
+mark
 for f in capstone/brief.md capstone/brief_template.md capstone/rubric.md data/capstone/manifest.csv data/capstone/2021-01-sabah.csv data/capstone/2021-01.parquet; do
   grep -qx "$f" "$tmp/got" || bad "the Capstone file $f is not in the release"
 done
-[ "$fail" = 0 ] && ok "the Capstone brief, rubric, template and 2021 extract are in the release"
+failed || ok "the Capstone brief, rubric, template and 2021 extract are in the release"
 for f in capstone/hints.md capstone_truth/readmit_2021.parquet capstone_truth/check.sql; do
   [ -n "$(git -C "$root" ls-tree --name-only "$ref" -- "$f")" ] || bad "$f is not in the tree, so its absence proves nothing"
 done
@@ -72,15 +72,16 @@ else
 fi
 
 # cards.html: one offline page holding every card, with nothing fetched from the network.
+mark
 for card in "$extracted"/cards/*.md; do
   cid="$(awk -F': *' 'NR > 1 && $1 == "id" { print $2; exit }' "$card")"
   grep -q "id=\"card-$cid\"" "$extracted/cards.html" || bad "cards.html has no card '$cid'"
 done
-[ "$fail" = 0 ] && ok "cards.html holds every card"
+failed || ok "cards.html holds every card"
 if ext="$(grep -Eo '(src|href)="(https?:)?//[^"]*"' "$extracted/cards.html")"; then
   bad "cards.html loads from the network: $(xargs <<<"$ext")"
 else
   ok "cards.html loads nothing from the network"
 fi
 if grep -q '<style' "$extracted/cards.html"; then ok "cards.html carries its own style"; else bad "cards.html has no inline style"; fi
-exit $fail
+finish

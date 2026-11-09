@@ -6,17 +6,16 @@
 # demo SQL in demos/m1/ and demos/m3/ runs against it (the S3 demo with the
 # bucket swapped for the local folder, since tests have no AWS access).
 set -u
+# shellcheck source=tests/lib/check.sh
+. "$(dirname "$0")/lib/check.sh"
 root="$(cd "$(dirname "$0")/.." && pwd)"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
-fail=0
-ok()  { echo "ok: $*"; }
-bad() { echo "FAIL: $*"; fail=1; }
 q()   { "$DUCKDB" -list -noheader :memory: -c "$1"; }
 
 for run in a b; do
   if ! LARGE_PATIENTS=58000 OUT_DIR="$tmp/$run" DIST_DIR="$tmp/$run/dist" "$root/build.sh" large >"$tmp/$run.log" 2>&1; then
-    echo "FAIL: build.sh large (run $run) exited non-zero:"; sed 's/^/  /' "$tmp/$run.log"; exit 1
+    bad "build.sh large (run $run) exited non-zero:"; sed 's/^/  /' "$tmp/$run.log"; finish
   fi
 done
 large="$tmp/a/large"
@@ -93,4 +92,4 @@ if (cd "$bundle" && { echo ".bail on"; echo "CALL enable_logging('HTTP', storage
   n="$(q "SELECT count(*) FROM '$bundle/hospital_load_national.parquet'")"
   if [ "$n" = 10 ]; then ok "hospital_load_national.parquet has the top 10 hospitals"; else bad "hospital_load_national.parquet has $n rows, not 10"; fi
 else bad "$s3 failed:"; sed 's/^/  /' "$tmp/m3.log"; fi
-exit $fail
+finish

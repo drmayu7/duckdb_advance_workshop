@@ -4,21 +4,21 @@
 # result, the exact Checkpoint line, C5's macros on any card that carries them,
 # and Series 1 SQL only on the Warm-up.
 set -u
+# shellcheck source=tests/lib/check.sh
+. "$(dirname "$0")/lib/check.sh"
 cd "$(dirname "$0")/.." || exit 1
-fail=0
-ok()  { echo "ok: $*"; }
-bad() { echo "FAIL: $*"; fail=1; }
 
 # shellcheck source=tools/cards.sh
 source tools/cards.sh
 
 # Every card, including the setup card, has the six front-matter keys.
+mark
 for card in cards/*.md; do
   for key in id title module timebox input output; do
     [ -n "$(card_field "$card" "$key")" ] || bad "$card: front-matter has no '$key'"
   done
 done
-[ "$fail" = 0 ] && ok "every card has id, title, module, timebox, input, output"
+failed || ok "every card has id, title, module, timebox, input, output"
 
 # A card that uses C5's macros carries them in a "Start here" macros cell, so it
 # works after C5's Checkpoint: the cell is C5's solution macros exactly (from the
@@ -97,4 +97,4 @@ while read -r card <&3; do
   fi
 done 3< <(challenge_cards)
 [ "$challenges" -gt 0 ] || bad "no Challenge cards (cards/w-*.md, cards/cNN-*.md, cards/t-*.md)"
-exit $fail
+finish
