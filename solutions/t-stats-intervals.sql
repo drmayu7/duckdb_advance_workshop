@@ -16,11 +16,16 @@ CREATE OR REPLACE TABLE readmit_ci AS
 WITH w AS (
   SELECT *, readmissions / index_episodes AS p, index_episodes AS n, qnorm(0.975) AS z
   FROM readmit_state
+),
+wilson AS (
+  SELECT *, (p + z ^ 2 / (2 * n)) / (1 + z ^ 2 / n) AS centre,
+            z * sqrt(p * (1 - p) / n + z ^ 2 / (4 * n ^ 2)) / (1 + z ^ 2 / n) AS half
+  FROM w
 )
 SELECT state, index_episodes, readmissions, readmit_pct,
-       round(100 * ((p + z ^ 2 / (2 * n)) - z * sqrt(p * (1 - p) / n + z ^ 2 / (4 * n ^ 2))) / (1 + z ^ 2 / n), 1) AS ci_low_pct,
-       round(100 * ((p + z ^ 2 / (2 * n)) + z * sqrt(p * (1 - p) / n + z ^ 2 / (4 * n ^ 2))) / (1 + z ^ 2 / n), 1) AS ci_high_pct
-FROM w;
+       round(100 * (centre - half), 1) AS ci_low_pct,
+       round(100 * (centre + half), 1) AS ci_high_pct
+FROM wilson;
 
 -- Check one number against R before you trust a young extension:
 -- prop.test(533, 3378, correct = FALSE)$conf.int is 0.146 to 0.170, Selangor's row.

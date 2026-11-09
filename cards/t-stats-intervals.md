@@ -13,7 +13,7 @@ output: readmit_ci
 
 **Time box:** 40 min · **Extension:** `stats_duck` · **Techniques:** `LOAD`, `qnorm()`, `qbeta()`, `ttest_2samp()`, `table_one()`, an aggregate's result as a `STRUCT`
 
-**Scenario.** The Director reads C9's table and asks: is Putrajaya's 20.4% really worse than Selangor's 15.8%, or is it just 49 patients? The team adds a 95% confidence interval to every state's rate, then answers a second question from the wards: do diabetes patients stay longer than dengue patients?
+**Scenario.** The Director reads C9's table and asks: is Putrajaya's 20.4% really worse than Selangor's 15.8%, or is it just 49 index episodes? The team adds a 95% confidence interval to every state's rate, then answers a second question from the wards: do diabetes patients stay longer than dengue patients?
 
 **Starts from:** the C8 and C9 Checkpoints (`episode`, `readmit_state`), so you can do this track whatever state your earlier work is in.
 

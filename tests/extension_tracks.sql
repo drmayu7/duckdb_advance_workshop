@@ -33,6 +33,12 @@ SELECT assert_eq('diabetes episodes stay 1.1 days longer than dengue ones, on av
   round(avg(los_days) FILTER (WHERE scenario_group = 'diabetes')
         - avg(los_days) FILTER (WHERE scenario_group = 'dengue'), 1), 1.1)
 FROM 'expected/episode.parquet' e JOIN read_csv('data/open/ref_icd10.csv') i ON i.icd10 = e.principal_dx;
+LOAD stats_duck;
+SELECT assert_eq('stats_duck''s Welch t-test: 1.1 days longer, 95% CI 1.0 to 1.2',
+  [round(t.mean_diff, 1), round(t.ci_lower, 1), round(t.ci_upper, 1)], [1.1, 1.0, 1.2])
+FROM (SELECT ttest_2samp(CASE WHEN scenario_group = 'diabetes' THEN los_days END,
+                         CASE WHEN scenario_group = 'dengue' THEN los_days END) AS t
+      FROM 'expected/episode.parquet' e JOIN read_csv('data/open/ref_icd10.csv') i ON i.icd10 = e.principal_dx);
 SELECT assert_eq('the t-stats card states that difference and its CI',
   contains(content, '**1.1 days**') AND contains(content, '1.0 to 1.2'), true)
 FROM read_text('cards/t-stats-intervals.md');
@@ -46,8 +52,7 @@ SELECT assert_eq('bed_facility columns and types',
   'hospital VARCHAR,state VARCHAR,facility_code VARCHAR,match_type VARCHAR,similarity DOUBLE');
 
 SELECT assert_eq('bed_facility has one row per bed utilisation hospital (149)',
-  (SELECT count(*) FROM bf SEMI JOIN bu USING (hospital)), 149)
-FROM bf HAVING count(*) = 149;
+  [(SELECT count(*) FROM bf), (SELECT count(*) FROM bf SEMI JOIN bu USING (hospital))], [149, 149]);
 
 SELECT assert_eq('143 exact, 2 fuzzy, 4 with no match',
   (SELECT string_agg(match_type || ' ' || n, ', ' ORDER BY match_type) FROM (SELECT match_type, count(*) AS n FROM bf GROUP BY ALL)),
@@ -57,16 +62,20 @@ SELECT assert_eq('every name that equals a facility_clean name once upper-cased 
 FROM bf JOIN 'expected/facility_clean.parquet' f ON f.facility_name = upper(bf.hospital)
 WHERE bf.facility_code IS DISTINCT FROM f.facility_code;
 
--- Checked by eye against the MoH facility list.
-SELECT assert_eq(hospital || ' -> ' || want, facility_code || ' ' || match_type, want)
-FROM bf JOIN (VALUES
-  ('Hospital Sultanah Aminah', '11-01020010 exact'),        -- "..., JOHOR BAHRU", not Sultanah Nora Ismail
-  ('Hospital  Raja Permaisuri Bainun', '11-08050011 exact'), -- double space
-  ('Hospital Wanita Dan Kanak-Kanak', '11-12060045 fuzzy'),  -- "KANAK - KANAK SABAH"
-  ('Hospital Sungai Buloh', '11-10010019 fuzzy')             -- "SUNGAI BULUH"
-) w(hospital, want) USING (hospital);
-SELECT assert_eq(hospital || ' has no match', facility_code IS NULL AND match_type = 'none', true)
-FROM bf WHERE hospital IN ('Hospital Serdang', 'Hospital Universiti Kebangsaan Malaysia', 'Hospital Changkat Melintang', 'Hospital Kajang');
+-- Checked by eye against the MoH facility list. A name missing from bed_facility
+-- shows as NULL, so it fails too.
+CREATE TABLE by_eye AS FROM (VALUES
+  ('Hospital Sultanah Aminah', '11-01020010 exact'),          -- "..., JOHOR BAHRU", not Sultanah Nora Ismail
+  ('Hospital  Raja Permaisuri Bainun', '11-08050011 exact'),   -- double space
+  ('Hospital Wanita Dan Kanak-Kanak', '11-12060045 fuzzy'),    -- "KANAK - KANAK SABAH"
+  ('Hospital Sungai Buloh', '11-10010019 fuzzy'),              -- "SUNGAI BULUH"
+  ('Hospital Serdang', 'none'),                                -- not in the MoH hospital list
+  ('Hospital Universiti Kebangsaan Malaysia', 'none'),         -- a university hospital
+  ('Hospital Changkat Melintang', 'none'),
+  ('Hospital Kajang', 'none')                                  -- listed under its new name (S1)
+) w(hospital, want);
+SELECT assert_eq(w.hospital || ' -> ' || w.want, concat_ws(' ', bf.facility_code, bf.match_type), w.want)
+FROM by_eye w LEFT JOIN bf USING (hospital);
 
 SELECT assert_eq('no hospital code is matched twice', count(*), 0)
 FROM (SELECT facility_code FROM bf WHERE facility_code IS NOT NULL GROUP BY ALL HAVING count(*) > 1);
@@ -82,8 +91,8 @@ SELECT assert_eq('dengue_district columns and types',
   (SELECT string_agg(column_name || ' ' || column_type, ',') FROM (DESCRIBE dd)),
   'state VARCHAR,district VARCHAR,people BIGINT,dengue_admissions BIGINT,adm_per_100k DOUBLE');
 
-SELECT assert_eq('dengue_district is the 160 DOSM districts, each with its polygon', count(*), 160)
-FROM dd JOIN geo USING (district) HAVING count(*) = (SELECT count(*) FROM dd);
+SELECT assert_eq('dengue_district is the 160 DOSM districts, each with its polygon',
+  [(SELECT count(*) FROM dd), (SELECT count(*) FROM dd SEMI JOIN geo USING (district))], [160, 160]);
 
 -- The truth: true 2018-2020 dengue admissions by the patient's health district,
 -- leaving out those whose district the extract lost (NU02, NULL in admission_clean).
@@ -102,9 +111,7 @@ WHERE t.n IS DISTINCT FROM d.n;
 
 -- GE02, the health districts DOSM names otherwise. Some districts come in both
 -- spellings (HULU LANGAT and ULU LANGAT, KANGAR and PERLIS): both count.
-SELECT assert_eq('GE02: ' || d.district || ' takes ' || array_to_string(w.health, ' + '),
-  d.dengue_admissions, (SELECT sum(n) FROM truth_dengue t WHERE t.state = w.state AND list_contains(w.health, t.district)))
-FROM dd d JOIN (VALUES
+CREATE TABLE ge02 AS FROM (VALUES
   ('W.P. Kuala Lumpur', 'WILAYAH PERSEKUTUAN KUALA LUMPUR', ['CHERAS', 'KEPONG', 'LEMBAH PANTAI', 'TITIWANGSA']),
   ('Ulu Langat', 'SELANGOR', ['HULU LANGAT', 'ULU LANGAT']),
   ('Ulu Selangor', 'SELANGOR', ['HULU SELANGOR', 'ULU SELANGOR']),
@@ -112,12 +119,14 @@ FROM dd d JOIN (VALUES
   ('Perlis', 'PERLIS', ['KANGAR', 'PERLIS']),
   ('W.P. Labuan', 'WILAYAH PERSEKUTUAN LABUAN', ['LABUAN']),
   ('W.P. Putrajaya', 'WILAYAH PERSEKUTUAN PUTRAJAYA', ['PUTRAJAYA'])
-) w(district, state, health) USING (district);
+) w(district, state, health);
+SELECT assert_eq('GE02: ' || w.district || ' takes ' || array_to_string(w.health, ' + '),
+  d.dengue_admissions, (SELECT sum(n) FROM truth_dengue t WHERE t.state = w.state AND list_contains(w.health, t.district)))
+FROM ge02 w LEFT JOIN dd d USING (district);
 
 SELECT assert_eq('any other district keeps the admissions of the health district of the same name', count(*), 0)
-FROM truth_dengue t JOIN dd d ON d.state = t.state AND upper(d.district) = t.district
-WHERE d.district NOT IN ('W.P. Kuala Lumpur', 'Ulu Langat', 'Ulu Selangor', 'Maradong', 'Perlis', 'W.P. Labuan', 'W.P. Putrajaya')
-  AND d.dengue_admissions <> t.n;
+FROM truth_dengue t JOIN (FROM dd ANTI JOIN ge02 USING (district)) d ON d.state = t.state AND upper(d.district) = t.district
+WHERE d.dengue_admissions <> t.n;
 
 SELECT assert_eq('people is the DOSM 2020 district population', count(*), 0)
 FROM dd JOIN 'data/open/population_district.parquet' p USING (district)

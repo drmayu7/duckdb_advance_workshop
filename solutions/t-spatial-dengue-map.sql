@@ -1,5 +1,5 @@
 -- Reveal: Extension track "Spatial: dengue by district" (cards/t-spatial-dengue-map.md).
--- Run from the bundle folder, in your Work database, after C6 (or its Checkpoint).
+-- Run from the bundle folder, in your Work database, after C5 and C6 (or their Checkpoints).
 
 -- C5's macros, in case C5 was done from its Checkpoint (which loads the table only).
 CREATE OR REPLACE MACRO state_key(s) AS regexp_replace(upper(s), '[^A-Z]', '', 'g');
@@ -52,7 +52,7 @@ ORDER BY a.state, a.district;
 
 -- Core, step 1: the crosswalk for the 10 names that differ. Every other health
 -- district has the DOSM name, once upper-cased.
-CREATE OR REPLACE TABLE ge02 AS
+CREATE OR REPLACE TABLE district_crosswalk AS
 FROM (VALUES
   ('PERLIS', 'KANGAR', 'PERLIS'),
   ('SARAWAK', 'MERADONG', 'MARADONG'),
@@ -80,7 +80,7 @@ admitted AS (
   SELECT a.state, coalesce(g.dosm_district, a.district) AS dosm_district, count(*) AS admissions
   FROM admission_clean a
   JOIN read_csv('data/open/ref_icd10.csv') i ON i.icd10 = a.principal_dx
-  LEFT JOIN ge02 g ON g.state = a.state AND g.health_district = a.district
+  LEFT JOIN district_crosswalk g ON g.state = a.state AND g.health_district = a.district
   WHERE i.scenario_group = 'dengue' AND a.district IS NOT NULL
   GROUP BY ALL
 )
