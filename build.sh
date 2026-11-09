@@ -64,10 +64,31 @@ require_duckdb() {
   fi
 }
 
+# sql_test <file>: run one SQL test after tests/lib/assert.sql, echoing each
+# statement. It passes if DuckDB exits 0 and every `SELECT assert_eq(` statement
+# printed at least one "…: ok" line: a check that returns no rows asserts
+# nothing, so it fails rather than passing vacuously.
+sql_test() {
+  local out status
+  out="$({ cat tests/lib/assert.sql; echo ".echo on"; cat "$1"; } | "$DUCKDB" :memory: 2>&1)"
+  status=$?
+  echo "$out"
+  [ "$status" -eq 0 ] || return "$status"
+  # An assert statement starts at `SELECT assert_eq(` and ends at a line ending
+  # in `;`; its output must hold an ok line before the next echoed line.
+  awk '
+    function check() { if (open && ended && !seen) { print "assert_eq returned no rows: " first; bad = 1 } open = 0 }
+    /^SELECT assert_eq\(/ { check(); open = 1; ended = 0; seen = 0; first = $0; if (/; *$/) ended = 1; next }
+    open && !ended { if (/; *$/) ended = 1; next }
+    open && ended && /: ok$/ { seen = 1; next }
+    open && ended { check() }
+    END { check(); exit bad }
+  ' <<<"$out"
+}
+
 # test [name...]: every tests/*.sql (or only the named ones) runs in a fresh
-# in-memory DuckDB from the repo root, after tests/lib/assert.sql; it passes if
-# DuckDB exits 0. Every tests/*.sh runs with DUCKDB exported; it passes if it
-# exits 0. Later tickets add files.
+# in-memory DuckDB from the repo root, through sql_test. Every tests/*.sh runs
+# with DUCKDB exported; it passes if it exits 0. Later tickets add files.
 run_tests() {
   local log passed=0 failed=0 t name want
   log="$(mktemp)"
@@ -91,7 +112,7 @@ run_tests() {
     [ -e "$t" ] || continue
     name="${t#tests/}"
     if case "$t" in
-         *.sql) cat tests/lib/assert.sql "$t" | "$DUCKDB" :memory: ;;
+         *.sql) sql_test "$t" ;;
          *.sh)  bash "$t" ;;
        esac >"$log" 2>&1; then
       echo "PASS  $name"

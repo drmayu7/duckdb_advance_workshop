@@ -10,6 +10,10 @@ Card and handout text is what a Participant reads, so a test may grep it (for ex
 
 One exception: when a test rewrites a file before running it, it may grep that file to guard the rewrite. For example, `tests/large_dataset.sh` swaps the S3 bucket for a local folder in `demos/m3/s3-demo.sql`, and it greps the bucket path first. That grep makes sure the swap still matches, so the offline run can never reach S3 by accident or test a different query. The test asserts what the rewritten file outputs, not how it is written.
 
-A check over a set (slides, cards, files, rows) also asserts the set is not empty, so a broken build can't pass vacuously. The Day 1 deck test once printed `speaker notes on all 0 slides` for an empty deck.
+A check over a set (slides, cards, files, rows) also asserts the set is not empty, so a broken build can't pass vacuously. The Day 1 deck test once printed `speaker notes on all 0 slides` for an empty deck. In a `tests/*.sql` file, `build.sh test` already fails an `assert_eq` statement that returns no rows (`tests/vacuous_assert.sh`). Review still applies the rule to the `tests/*.sh` loops, and to a SQL check that returns rows but would skip the case it means to check (a `JOIN` that drops a name instead of a `LEFT JOIN` that shows it as `NULL`).
+
+## Cards
+
+A ticket names the Stretch it requires. A card may add more Stretch rows, as long as each one runs offline with extensions already in the bundle (`setup/install.sql`); more rows than the ticket names is not scope creep.
 
 `build.sh test` runs every `tests/*.sql` and `tests/*.sh` it finds. A new test file needs no wiring.
