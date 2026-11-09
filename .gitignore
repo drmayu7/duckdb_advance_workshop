@@ -19,3 +19,8 @@ dist/
 
 # Playwright MCP browser session files
 .playwright-mcp/
+
+# The large dataset (build.sh large) and the demo files written next to it
+/large/
+/admission_2018_2021.csv
+/hospital_load_national.parquet

@@ -26,6 +26,17 @@ The synthetic admission export that Module 1 starts from (`cards/c01-read-csv.md
 
 `state`, `district`, `postcode` and `address` are where the patient lives. `secondary_dx` lists secondary diagnoses as ICD-10 codes separated by `; `.
 
+## Large dataset 2018–2021 (`large/`, not in the bundle)
+
+About 30 million clean, synthetic admissions for 2018–2021, for the facilitator's two demos: CSV vs Parquet in Module 1 (`demos/m1/csv-vs-parquet.sql`) and the live S3 demo in Module 3 (`demos/m3/s3-demo.sql`). It comes from the same generator as the small data, at a bigger scale, so it has the clean admission table's columns and no data-quality defects. It is never committed and is not in any release: `./build.sh large` writes it (a few minutes) along with the take-home zip `dist/duckdb-large-2018-2021.zip`, which goes on Drive, and `./build.sh large-upload` copies it to the private bucket `s3://duckdb-series2-2026/large/`.
+
+| Files | What it is |
+|---|---|
+| `large/admission/year=2018/part-1.parquet` … `year=2021/part-4.parquet` | Every 2018–2021 admission, one file per admit quarter: `admission_id`, `patient_id`, `mrn`, `facility_code`, `admit_ts`, `discharge_ts`, `principal_dx`, `secondary_dx` (a list), `discharge_status`, `ward`, `admission_type`. Hive-partitioned: `year` is in the folder name, not in the files. |
+| `large/patient.parquet` | Every patient with a 2018–2021 admission, with the same columns as the generator's clean `patient` table. |
+
+The demo's CSV (`admission_2018_2021.csv`, a few GB) is written by the facilitator next to `large/`, not inside it.
+
 ## Open data (`data/open/`)
 
 Real Malaysian open data, used as reference tables to join to. Every file reads directly in DuckDB 1.5.6, for example `FROM 'data/open/population_state.parquet'` or `FROM read_json('data/open/facilities.json')`.
