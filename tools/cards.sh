@@ -2,11 +2,15 @@
 # Shared readers for Challenge cards, sourced by build.sh and tests/.
 # A card is Markdown with YAML-like front-matter and <!-- begin x --> blocks.
 
-# challenge_cards: Challenge cards in chain order (Warm-up, C1-C10, tracks).
+# challenge_cards: Challenge cards in chain order (Warm-up, C1-C10, then the
+# tracks in the spec's order: t-stats, t-names, t-spatial, then any other t-*).
 challenge_cards() {
   local card
-  for card in cards/w-*.md cards/c[0-9][0-9]-*.md cards/t-*.md; do
+  for card in cards/w-*.md cards/c[0-9][0-9]-*.md cards/t-stats-*.md cards/t-names-*.md cards/t-spatial-*.md; do
     [ -e "$card" ] && echo "$card"
+  done
+  for card in cards/t-*.md; do
+    case "$card" in cards/t-stats-*|cards/t-names-*|cards/t-spatial-*) ;; *) [ -e "$card" ] && echo "$card" ;; esac
   done
   return 0
 }

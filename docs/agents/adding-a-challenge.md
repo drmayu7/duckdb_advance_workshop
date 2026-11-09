@@ -33,6 +33,8 @@ Copy the shape of a recent card (`cards/c09-readmission.md`). What the tests che
 
 So a solution may read only the earlier outputs, `data/`, and objects it creates itself, never a helper table from an earlier solution.
 
+An Extension track (`t-*`) catches up from the Warm-up and C1–C10 Checkpoints only, never another track's, because a Participant picks any two tracks in any order. So a track's solution may not read another track's output. A track that needs a community extension `LOAD`s it in its solution and its card (`stats_duck`, `rapidfuzz` and `splink_udfs` never autoload); `tests/extension_tracks.sql` is the tracks' module test.
+
 ## Generator defects
 
 A defect the Challenge teaches goes in `generator/raw.sql`:
