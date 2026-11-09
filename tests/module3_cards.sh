@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
-# Module 3 cards (#29), beyond what every card is checked for:
-#   * C10's "Start here" cell is C5's macros exactly as C5's solution writes
-#     them, and C10's solution creates them too, so C10 works after C5's Checkpoint;
-#   * C10's export: after its solution (from the earlier Checkpoints, in a
-#     bundle folder), the card's export check gives 0 and 0, the Excel file
-#     reads back, and a broken export does not pass.
+# Module 3 cards (#29), beyond what every card is checked for (its macros cell
+# is checked in challenge_cards.sh): C10's export. After its solution (from the
+# earlier Checkpoints, in a bundle folder), the card's export check gives 0 and
+# 0, the Excel file reads back, and a broken export does not pass.
 set -u
 root="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$root" || exit 1
@@ -18,18 +16,6 @@ bad() { echo "FAIL: $*"; fail=1; }
 source tools/cards.sh
 
 c10=cards/c10-state-brief.md
-card_block "$c10" macros | sql_cell 1 >"$tmp/card_macros.sql"
-awk '/^CREATE OR REPLACE MACRO/ { f = 1 } /^-- Try them\./ { exit } f' solutions/c05-facilities.sql \
-  | awk '{ l[NR] = $0 } END { n = NR; while (n > 0 && l[n] == "") n--; for (i = 1; i <= n; i++) print l[i] }' >"$tmp/c5_macros.sql"
-if [ -s "$tmp/card_macros.sql" ] && diff -q "$tmp/card_macros.sql" "$tmp/c5_macros.sql" >/dev/null; then
-  ok "$c10: the macros cell is C5's solution macros"
-else
-  bad "$c10: the macros cell differs from solutions/c05-facilities.sql:"; diff "$tmp/card_macros.sql" "$tmp/c5_macros.sql" | sed 's/^/  /'
-fi
-missing="$(grep -oE '^CREATE OR REPLACE MACRO [a-z_]+' "$tmp/c5_macros.sql" | while read -r line; do
-             grep -qF "$line" solutions/c10-state-brief.sql || echo "${line##* }"; done)"
-if [ -z "$missing" ]; then ok "solutions/c10-state-brief.sql creates C5's macros"
-else bad "solutions/c10-state-brief.sql does not create: $missing"; fi
 
 # The export, in a bundle folder with a fresh Work database.
 bundle="$tmp/duckdb-bundle"

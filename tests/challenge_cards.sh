@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Challenge cards follow the card format (#5, #16): front-matter, the sections a
 # Participant works through, an example row that really is in the expected
-# result, the exact Checkpoint line, and Series 1 SQL only on the Warm-up.
+# result, the exact Checkpoint line, C5's macros on any card that carries them,
+# and Series 1 SQL only on the Warm-up.
 set -u
 cd "$(dirname "$0")/.." || exit 1
 fail=0
@@ -18,6 +19,15 @@ for card in cards/*.md; do
   done
 done
 [ "$fail" = 0 ] && ok "every card has id, title, module, timebox, input, output"
+
+# A card that uses C5's macros carries them in a "Start here" macros cell, so it
+# works after C5's Checkpoint: the cell is C5's solution macros exactly (from the
+# first CREATE OR REPLACE MACRO to "-- Try them."), and the card's own solution
+# creates them too, so the Reveal also runs after the Checkpoint.
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+awk '/^CREATE OR REPLACE MACRO/ { f = 1 } /^-- Try them\./ { exit } f' solutions/c05-facilities.sql \
+  | awk '{ l[NR] = $0 } END { n = NR; while (n > 0 && l[n] == "") n--; for (i = 1; i <= n; i++) print l[i] }' >"$tmp/c5_macros.sql"
 
 challenges=0
 while read -r card <&3; do
@@ -63,6 +73,19 @@ while read -r card <&3; do
           if (v == "NULL") printf "%s IS NULL", c[i]; else printf "%s::VARCHAR = '\''%s'\''", c[i], v } }' <<<"$row")"
     hits="$("$DUCKDB" -csv -noheader :memory: -c "SELECT count(*) FROM '$expected' WHERE $where;" 2>&1)"
     if [ "$hits" = 1 ]; then ok "$card: example row is a row of $expected"; else bad "$card: example row is not in $expected ($hits): $row"; fi
+  fi
+
+  if grep -qF '<!-- begin macros -->' "$card"; then
+    card_block "$card" macros | sql_cell 1 >"$tmp/card_macros.sql"
+    if [ -s "$tmp/c5_macros.sql" ] && diff -q "$tmp/card_macros.sql" "$tmp/c5_macros.sql" >/dev/null; then
+      ok "$card: the macros cell is C5's solution macros"
+    else
+      bad "$card: the macros cell differs from solutions/c05-facilities.sql:"; diff "$tmp/card_macros.sql" "$tmp/c5_macros.sql" | sed 's/^/  /'
+    fi
+    missing="$(grep -oE '^CREATE OR REPLACE MACRO [a-z_]+' "$tmp/c5_macros.sql" | while read -r line; do
+                 grep -qF "$line" "solutions/$base.sql" || echo "${line##* }"; done)"
+    if [ -z "$missing" ]; then ok "solutions/$base.sql creates C5's macros"
+    else bad "solutions/$base.sql does not create C5's macros: $missing"; fi
   fi
 
   # The Warm-up is Series 1 SQL only: nothing Series 2 teaches.

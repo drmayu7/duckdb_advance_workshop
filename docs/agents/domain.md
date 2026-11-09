@@ -11,6 +11,7 @@ How the engineering skills should consume this repo's domain documentation when 
   - `myhdw-like-data-sources.md`: open-data sources and licences, the defect catalogue (codes like GE04, ID06), MyKad facts.
   - `duckdb-wrangling-features.md`: the DuckDB SQL and UI features the Challenges teach, with pitfalls.
   - `duckdb-extensions-integrations.md`: per-extension notes, exact Offline bundle install steps, Python/R integration.
+- **`docs/agents/adding-a-challenge.md`**: before adding or changing a Challenge card, its solution, expected result or generator defect: the files, what the card tests check, and the chain rules.
 
 If any of these files don't exist, **proceed silently**. Don't flag their absence; don't suggest creating them upfront. The `/domain-modeling` skill (reached via `/grill-with-docs` and `/improve-codebase-architecture`) creates them lazily when terms or decisions actually get resolved.
 
