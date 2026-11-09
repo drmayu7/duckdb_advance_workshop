@@ -1,0 +1,63 @@
+{
+  "about": "Captured output of demos/m3/s3-demo.sql for the Module 3 backup slides (slides/m3.js). Rows: the same queries run on the local large/ folder that was uploaded to the bucket (9 Nov). Fetched bytes: measured against the live bucket in ap-southeast-5 on 9 Nov, with enable_external_file_cache = false. The 10 Nov dry run replaces them with its own capture.",
+  "captured": "9 Nov 2026",
+  "region": "ap-southeast-5",
+  "total": "about 45 s for the whole demo",
+  "steps": {
+    "1": {
+      "fetched": "0.5 MiB",
+      "columns": ["admissions"],
+      "rows": [[30105844]]
+    },
+    "2": {
+      "columns": ["column_name", "column_type"],
+      "rows": [
+        ["admission_id", "BIGINT"],
+        ["patient_id", "BIGINT"],
+        ["mrn", "VARCHAR"],
+        ["facility_code", "VARCHAR"],
+        ["admit_ts", "TIMESTAMP"],
+        ["discharge_ts", "TIMESTAMP"],
+        ["principal_dx", "VARCHAR"],
+        ["secondary_dx", "VARCHAR[]"],
+        ["discharge_status", "VARCHAR"],
+        ["ward", "VARCHAR"],
+        ["admission_type", "VARCHAR"],
+        ["year", "BIGINT"]
+      ]
+    },
+    "3a": {
+      "fetched": "7.0 MiB",
+      "requests": 76,
+      "plan": "Scanning Files: 4/16",
+      "columns": ["facility_code", "admissions"],
+      "rows": [
+        ["11-10040013", 211891],
+        ["12-10042306", 158399],
+        ["11-01020010", 149092],
+        ["11-07050009", 147230],
+        ["11-02030085", 144688]
+      ]
+    },
+    "3b": {
+      "fetched": "414 MiB",
+      "requests": 271
+    },
+    "4": {
+      "fetched": "55 MiB",
+      "columns": ["state", "facility_name", "admissions_2020", "admissions_2021", "bed_days_2020", "bed_days_2021", "admissions_change_pct"],
+      "rows": [
+        ["SELANGOR", "HOSPITAL TENGKU AMPUAN RAHIMAH", 209197, 211891, 780088, 799061, 1.3],
+        ["SELANGOR", "HOSPITAL AL- SULTAN ABDULLAH, UITM", 156563, 158399, 586072, 595765, 1.2],
+        ["JOHOR", "HOSPITAL SULTANAH AMINAH, JOHOR BAHRU", 146949, 149092, 550886, 558506, 1.5],
+        ["PULAU PINANG", "HOSPITAL PULAU PINANG", 145247, 147230, 546817, 552411, 1.4],
+        ["KEDAH", "HOSPITAL SULTANAH BAHIYAH", 142612, 144688, 531719, 543713, 1.5],
+        ["MELAKA", "HOSPITAL MELAKA", 142947, 144092, 534657, 539933, 0.8],
+        ["SELANGOR", "HOSPITAL SHAH ALAM", 139255, 141901, 521049, 531389, 1.9],
+        ["JOHOR", "HOSPITAL SULTANAH NORA ISMAIL", 137480, 139387, 513021, 521198, 1.4],
+        ["SELANGOR", "PUSAT PAKAR PERUBATAN UITM (SUNGAI BULOH)", 134138, 136346, 503704, 510042, 1.6],
+        ["PERAK", "HOSPITAL RAJA PERMAISURI BAINUN", 133390, 135133, 500154, 506948, 1.3]
+      ]
+    }
+  }
+}

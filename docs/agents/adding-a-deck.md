@@ -6,7 +6,7 @@ A deck is one Claude-designed script, `slides/<deck>.js`, on the shared `slides/
 
 Reuse these rather than writing the content into the script:
 
-- **`challengeSlide(card, notes)`**: one per card, from front-matter only (`cardsOf("<module>")`). `tests/day1_decks.sh` expects exactly one slide per card holding its title, time box and output, so no other slide may hold all three.
+- **`challengeSlide(card, notes)`**: one per card, from front-matter only (`cardsOf("<module>")`), Extension track cards included (their badge is `STATS`, `NAMES`, `SPATIAL`). The deck tests expect exactly one slide per card holding its title, time box and output, so no other slide may hold all three.
 - **`demoSlides("demos/<deck>/<file>.sql", { steps })`**: one slide per numbered step (`-- 1. …`), with the step's comment as the explanation and its SQL in full. SQL before step 1, or between `-- begin setup` and `-- end setup`, goes in the first step's notes (or on its own slide with `setupSlide`). Keep demo lines short enough to read: past about 9 lines the code moves beside the text.
 - **`revealSlide`**, **`chainSlide`**, **`sectionSlide`**, **`titleSlide`**, and the setup-card slides (`setupCheckSlide`, `fixCodesSlide`, `fixProblemsSlide`, `contentIdSlide`).
 
@@ -14,7 +14,13 @@ Every slide takes speaker notes; the build fails without them. Notes and Reveal 
 
 ## Demo SQL
 
-Each demo teaches its technique on other data (open data or values typed into the cell), so it gives away no Challenge answer. Add the deck to the loop in `tests/day1_demos.sh` (or its Day 2 equivalent) so every demo runs on 1.5.6.
+Each demo teaches its technique on other data (open data or values typed into the cell), so it gives away no Challenge answer. Add the deck to the loop in `tests/day1_demos.sh` or `tests/day2_demos.sh` so every demo runs on 1.5.6. A demo that needs more than the bundle (the S3 bucket, a Google sign-in) is skipped there, and says so in the test's header.
+
+The S3 demo's backup slides read `demos/m3/s3-demo-backup.json`, its captured output: rows from the local `large/`, bytes from the live bucket. A dry run that captures new figures updates that file and rebuilds `m3`.
+
+## Tests
+
+The deck tests share `tests/lib/decks.sh`: `check_deck` (Challenge slides, demo steps, notes), `slide_with` for a deck's own required slides, `check_committed` and `check_no_repo_url`. A new deck's test sources it and adds only what is particular to that deck.
 
 ## The Content id
 

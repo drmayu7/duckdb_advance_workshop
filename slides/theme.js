@@ -75,15 +75,23 @@ function cardsOf(module) {
   return challengeCards().filter((c) => c.module === module);
 }
 
-/** The short label a Participant knows a Challenge by: W, C1 ... C10. */
+/** The short label a Participant knows a Challenge by: W, C1 ... C10, and STATS, NAMES, SPATIAL for the tracks. */
 function cardLabel(card) {
   if (card.id === "w") return "W";
+  if (isTrack(card)) return card.id.slice(2).toUpperCase();
   const m = card.id.match(/^c0*(\d+)$/);
   return m ? `C${m[1]}` : card.id.toUpperCase();
 }
 
+/** An Extension track card (t-*), rather than a Challenge in the chain. */
+function isTrack(card) {
+  return card.id.startsWith("t-");
+}
+
+/** The name a card goes by in cards.html. */
 function cardName(card) {
-  return card.id === "w" ? "Warm-up" : cardLabel(card);
+  if (card.id === "w") return "Warm-up";
+  return isTrack(card) ? card.title : cardLabel(card);
 }
 
 /**
@@ -547,9 +555,9 @@ class Deck {
     const label = cardLabel(card);
     // Badge and title
     this.chip(s, MARGIN, 0.45, 1.35, 1.35, label, {
-      fill: COLOR.teal, color: COLOR.white, fontFace: FONT.head, fontSize: label.length > 2 ? 30 : 40,
+      fill: COLOR.teal, color: COLOR.white, fontFace: FONT.head, fontSize: label.length > 3 ? 17 : label.length > 2 ? 30 : 40, margin: 2,
     });
-    this.text(s, MARGIN + 1.65, 0.45, 7.6, 0.4, card.id === "w" ? "WARM-UP CHALLENGE" : "CHALLENGE", {
+    this.text(s, MARGIN + 1.65, 0.45, 7.6, 0.4, card.id === "w" ? "WARM-UP CHALLENGE" : isTrack(card) ? "EXTENSION TRACK" : "CHALLENGE", {
       fontSize: 14, bold: true, color: COLOR.teal,
     });
     this.text(s, MARGIN + 1.65, 0.82, 7.8, 1.0, card.title, { fontFace: FONT.head, fontSize: 32, bold: true, valign: "top" });
@@ -563,8 +571,8 @@ class Deck {
     const top = 2.35;
     this.text(s, MARGIN, top, 4, 0.35, "YOU START FROM", { fontSize: 13, bold: true, color: COLOR.muted });
     this.text(s, 8.15, top, 4, 0.35, "YOU BUILD", { fontSize: 13, bold: true, color: COLOR.muted });
-    const chipH = inputs.length > 2 ? 0.42 : 0.5;
-    const gap = inputs.length > 2 ? 0.12 : 0.16;
+    const chipH = inputs.length > 4 ? 0.34 : inputs.length > 2 ? 0.42 : 0.5;
+    const gap = inputs.length > 4 ? 0.07 : inputs.length > 2 ? 0.12 : 0.16;
     const blockH = inputs.length * chipH + (inputs.length - 1) * gap;
     const mid = top + 0.5 + Math.max(blockH, chipH) / 2;
     inputs.forEach((inp, i) => {
@@ -790,5 +798,5 @@ class Deck {
 
 module.exports = {
   Deck, COLOR, FONT, W, H, MARGIN, REPO,
-  readCard, challengeCards, cardsOf, cardLabel, cardName, readDemo, readFixSheet, readSetupSteps, md, firstSentence,
+  readCard, challengeCards, cardsOf, cardLabel, cardName, isTrack, readDemo, readFixSheet, readSetupSteps, md, firstSentence,
 };

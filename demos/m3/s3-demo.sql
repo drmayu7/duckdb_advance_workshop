@@ -25,6 +25,16 @@ SET enable_external_file_cache = false;
 CALL enable_logging('HTTP', storage = 'memory');
 -- end setup
 
+-- Bytes fetched since the log was last cleared, from the HTTP log.
+CREATE OR REPLACE MACRO fetched() AS TABLE
+  SELECT count(*) AS requests,
+         format_bytes(sum(TRY_CAST(response.headers['Content-Length'] AS BIGINT))::BIGINT) AS bytes
+  FROM duckdb_logs_parsed('HTTP');
+
+-- Step 4 joins the local facility_clean from Challenge 5. Not in this Work
+-- database? This loads C5's Checkpoint.
+CREATE TABLE IF NOT EXISTS facility_clean AS FROM 'expected/facility_clean.parquet';
+
 -- 1. One secret, no keys in the SQL, no download. The count comes from the
 -- Parquet footers alone.
 SELECT count(*) AS admissions FROM 's3://duckdb-series2-2026/large/admission/*/*.parquet';
@@ -37,7 +47,7 @@ FROM which_secret('s3://duckdb-series2-2026/large/x', 's3');
 DESCRIBE FROM 's3://duckdb-series2-2026/large/admission/*/*.parquet';
 
 -- 3. Pruning, measured. Bytes fetched are in the HTTP log; clear it, run one
--- query, then read it.
+-- query, then read it with fetched().
 CALL truncate_duckdb_logs();
 
 -- 3a. Two columns, one year: 4 of the 16 files, one column chunk each.
@@ -48,21 +58,19 @@ GROUP BY ALL
 ORDER BY admissions DESC, facility_code
 LIMIT 5;
 
-SELECT count(*) AS requests,
-       format_bytes(sum(TRY_CAST(response.headers['Content-Length'] AS BIGINT))::BIGINT) AS bytes
-FROM duckdb_logs_parsed('HTTP');
+FROM fetched();
 CALL truncate_duckdb_logs();
 
 -- 3b. Every column of every year: the whole dataset comes over the network.
 -- Skip it on a phone hotspot; the dry-run figure is on the backup slide.
-SELECT count(COLUMNS(*)) FROM 's3://duckdb-series2-2026/large/admission/*/*.parquet';
+SELECT count(COLUMNS(*))
+FROM 's3://duckdb-series2-2026/large/admission/*/*.parquet';
 
-SELECT count(*) AS requests,
-       format_bytes(sum(TRY_CAST(response.headers['Content-Length'] AS BIGINT))::BIGINT) AS bytes
-FROM duckdb_logs_parsed('HTTP');
+FROM fetched();
 CALL truncate_duckdb_logs();
 
--- The plan shows the pruning: "File Filters" on year and "Scanning Files: 4/16".
+-- The plan shows the pruning: "File Filters" on year,
+-- and "Scanning Files: 4/16".
 EXPLAIN ANALYZE
 SELECT facility_code, count(*) AS admissions
 FROM 's3://duckdb-series2-2026/large/admission/*/*.parquet'
@@ -72,28 +80,30 @@ GROUP BY ALL;
 -- 4. The brief question: which hospitals carry the load, 2021 vs 2020? The
 -- admissions stay on S3; facility_clean is the local table from Challenge 5.
 -- Bed-days are counted as C4's los_days is: discharge date minus admit date.
--- No facility_clean in this Work database? Load C5's Checkpoint first.
-CREATE TABLE IF NOT EXISTS facility_clean AS FROM 'expected/facility_clean.parquet';
-
 CREATE OR REPLACE TABLE hospital_load_national AS
-WITH load AS (
+WITH stay AS (
+  SELECT facility_code, year,
+         date_diff('day', admit_ts::DATE, discharge_ts::DATE) AS bed_days
+  FROM 's3://duckdb-series2-2026/large/admission/*/*.parquet'
+  WHERE year IN (2020, 2021)
+), load AS (
   SELECT facility_code,
          count(*) FILTER (WHERE year = 2020) AS admissions_2020,
          count(*) FILTER (WHERE year = 2021) AS admissions_2021,
-         sum(date_diff('day', admit_ts::DATE, discharge_ts::DATE)) FILTER (WHERE year = 2020)::BIGINT AS bed_days_2020,
-         sum(date_diff('day', admit_ts::DATE, discharge_ts::DATE)) FILTER (WHERE year = 2021)::BIGINT AS bed_days_2021
-  FROM 's3://duckdb-series2-2026/large/admission/*/*.parquet'
-  WHERE year IN (2020, 2021)
+         sum(bed_days) FILTER (WHERE year = 2020)::BIGINT AS bed_days_2020,
+         sum(bed_days) FILTER (WHERE year = 2021)::BIGINT AS bed_days_2021
+  FROM stay
   GROUP BY ALL
 )
 SELECT f.state, f.facility_name, l.*,
-       round(100 * (admissions_2021 - admissions_2020) / admissions_2020, 1) AS admissions_change_pct
+       round(100 * (admissions_2021 - admissions_2020) / admissions_2020, 1)
+         AS admissions_change_pct
 FROM load l
 JOIN facility_clean f USING (facility_code)
 ORDER BY admissions_2021 DESC, facility_code
 LIMIT 10;
 
+-- 5. Bring home the answer, not the data: ten rows, written next to the bundle.
 FROM hospital_load_national;
 
--- 5. Bring home the answer, not the data: ten rows, written next to the bundle.
 COPY hospital_load_national TO 'hospital_load_national.parquet';
