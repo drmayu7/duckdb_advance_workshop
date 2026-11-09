@@ -43,8 +43,9 @@ run() {
     cat solutions/c07-hospital-load.sql solutions/c08-episode.sql solutions/c09-readmission.sql
     cat capstone_truth/reference/summary.sql
   } >"$name/pipeline.sql"
+  # run is called in $(...), so a failure is recorded in a file, not in $fail.
   if ! out="$(cd "$name" && "$DUCKDB" work.duckdb <pipeline.sql 2>&1 >/dev/null)"; then
-    bad "$name: pipeline failed: $out"; return 1
+    echo "$name: pipeline failed: $out" >>pipeline_failures; return 1
   fi
   (cd "$name" && "$DUCKDB" -list -noheader :memory: -c ".read capstone_truth/check.sql" \
      -c "FROM check_readmit('readmit_2021.parquet')" -c "FROM check_dengue('dengue_2021.parquet')" \
@@ -112,4 +113,5 @@ expect "every fix" "$(run allfix dt02 dx04 id06)" matches matches matches
 expect "every fix but ID06" "$(run no_id06 dt02 dx04)" differs - -
 expect "every fix but DX04" "$(run no_dx04 dt02 id06)" - differs -
 expect "every fix but DT02" "$(run no_dt02 dx04 id06)" - - differs
+if [ -s pipeline_failures ]; then bad "pipelines failed:"; sed 's/^/  /' pipeline_failures; fi
 exit $fail

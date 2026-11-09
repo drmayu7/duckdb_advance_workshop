@@ -23,21 +23,22 @@ CREATE TABLE cx AS
 WITH a AS (
   SELECT a.*, p.mykad, p.name, p.dob, p.sex, p.state, p.district, p.postcode, p.address,
          h.state = 'SABAH' AS sabah,
+         CASE WHEN h.state = 'SABAH' THEN 'old_his' ELSE 'new_his' END AS sys,
          a.discharge_ts + to_minutes((60 + floor(u(a.admission_id, 'updated') * 2820))::BIGINT) AS updated_ts
   FROM admission a JOIN patient p USING (patient_id) JOIN ref_hospital h USING (facility_code)
   WHERE year(a.admit_ts) = 2021
 )
 SELECT admission_id AS rid, admission_id, patient_id,
-       CASE WHEN sabah THEN 'old_his' ELSE 'new_his' END AS sys,
+       sys,
        strftime(admit_ts, '%Y-%m') || CASE WHEN sabah THEN '-sabah.csv' ELSE '.parquet' END AS file,
        mrn, mykad, name,
        CASE WHEN sabah THEN strftime(dob, '%d/%m/%Y') ELSE strftime(dob, '%Y-%m-%d') END AS dob,
        sex, state, district, postcode, address, facility_code,
-       fmt_ts(CASE WHEN sabah THEN 'old_his' ELSE 'new_his' END, admit_ts) AS admit,
-       fmt_ts(CASE WHEN sabah THEN 'old_his' ELSE 'new_his' END, discharge_ts) AS discharge,
+       fmt_ts(sys, admit_ts) AS admit,
+       fmt_ts(sys, discharge_ts) AS discharge,
        discharge_status, principal_dx,
        nullif(array_to_string(secondary_dx, '; '), '') AS secondary_dx,
-       fmt_updated(CASE WHEN sabah THEN 'old_his' ELSE 'new_his' END, updated_ts) AS updated_at,
+       fmt_updated(sys, updated_ts) AS updated_at,
        CASE WHEN NOT sabah THEN ward END AS ward,
        CASE WHEN NOT sabah THEN admission_type END AS admission_type,
        admit_ts, discharge_ts, updated_ts

@@ -18,7 +18,7 @@ Compare the number of people in 2021 with the number of patients your pipeline e
 Your 2021 dengue rate is **lower than 2020 in almost every state**, often by a third or more.
 
 - A drop that broad, in every state at once, rarely comes from the disease.
-- Look at the **principal diagnoses that don't join `ref_icd10`**. C5 had a check for exactly that.
+- Compare your 2021 **principal diagnoses** with 2020's in the `admission_clean` Checkpoint: which values are new in 2021?
 
 ---
 

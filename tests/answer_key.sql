@@ -244,7 +244,7 @@ FROM (SELECT count(DISTINCT patient_id) AS patients, count(DISTINCT dirty_value)
       GROUP BY GROUPING SETS ((patient_id), (dirty_value)))
 WHERE patients > 1 OR identifiers > 1;
 
-SELECT assert_eq('ID06 is in both systems, most in Sabah',
+SELECT assert_eq('ID06 is in both systems, more than a fifth of it in Sabah',
   (SELECT count(DISTINCT regexp_extract(file, '\.(\w+)$', 1)) FROM answer_key WHERE defect_code = 'ID06') = 2
   AND (SELECT count(*) FROM answer_key WHERE defect_code = 'ID06' AND file LIKE '%-sabah.csv')
       > (SELECT count(*) FROM answer_key WHERE defect_code = 'ID06') / 5, true);
