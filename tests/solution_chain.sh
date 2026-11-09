@@ -70,24 +70,31 @@ while read -r card <&3; do
 done 3< <(challenge_cards)
 
 # Catching up: a Participant who loaded every earlier Checkpoint, in a fresh
-# Work database, runs the next solution and also sees 0 rows differ.
+# Work database, runs the next solution and also sees 0 rows differ. An
+# Extension track (t-*) gets only the Warm-up and C1-C10 Checkpoints, never
+# another track's, so any two tracks can be done in either order (#30).
 checkpoints=""
+tracks=0
 while read -r card <&3; do
   base="$(basename "$card" .md)"
   count_cell="$(card_block "$card" self-check | sql_cell 1)"
+  case "$base" in t-*) track=1; tracks=$((tracks + 1)); from="the Warm-up and C1-C10 Checkpoints alone" ;;
+                  *)   track=0; from="only the earlier Checkpoints" ;; esac
   if [ -n "$checkpoints" ]; then
     rm -f catchup.duckdb
     if ! out="$( { echo .bail on; echo "$checkpoints"; cat "solutions/$base.sql"; } | "$DUCKDB" catchup.duckdb 2>&1 >/dev/null)"; then
-      bad "$base: solution failed after only the earlier Checkpoints: $out"
+      bad "$base: solution failed after $from: $out"
     else
       n="$("$DUCKDB" -list -noheader catchup.duckdb -c "$count_cell" 2>&1)"
-      if [ "$n" = 0 ]; then ok "$base: 0 rows differ from a fresh Work database with only the earlier Checkpoints"
-      else bad "$base: from only the earlier Checkpoints the Self-check gave '$n', want 0"; fi
+      if [ "$n" = 0 ]; then ok "$base: 0 rows differ from a fresh Work database with $from"
+      else bad "$base: from $from the Self-check gave '$n', want 0"; fi
     fi
   fi
+  [ "$track" = 1 ] && continue
   checkpoints="$checkpoints
 $(card_block "$card" checkpoint | sql_cell 1)"
 done 3< <(challenge_cards)
+[ "$tracks" -gt 0 ] || bad "no Extension track cards (cards/t-*.md) in the chain"
 
 # expected/ in the repo is current, and building it writes nothing into the
 # repo: solutions run in a scratch folder, so a COPY TO (C10's export) lands
