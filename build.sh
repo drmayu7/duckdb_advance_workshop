@@ -34,6 +34,11 @@ Targets:
   setup       Build the Setup release dist/duckdb-bundle-YYYYMMDD.zip
               (first run needs network to fill .cache/setup/; DIST_DIR and
               BUNDLE_DATE override the folder and the date)
+  slides      Build every deck script in slides/ (refresher, m1, ...) into
+              handouts/<deck>.pptx (ADR 0004); CONTENT_ID (YYYYMMDD-HHMM, the
+              id of the Content release that will carry them) goes on the
+              morning slide, and HANDOUTS_DIR overrides the folder. Needs Node;
+              the first run installs the pinned pptxgenjs (slides/package-lock.json)
   cards       Render every card into one offline page dist/cards.html
               (DIST_DIR overrides the folder)
   content     Build the Content release dist/duckdb-content-YYYYMMDD-HHMM.zip
@@ -222,6 +227,26 @@ build_setup() {
   echo "build.sh: wrote $zip"
 }
 
+# slides: the decks (#26, ADR 0004). Each slides/<deck>.js is a Claude-designed
+# script that rebuilds its deck exactly; it reads card front-matter and demo SQL
+# from the repo. The decks carry the id of the Content release they ship in, so
+# build them with that release's CONTENT_ID, commit handouts/, then build it.
+SLIDE_DECKS=(refresher m1 m2 m3 m4 closing)
+build_slides() {
+  local id="${CONTENT_ID:-}" out="${HANDOUTS_DIR:-handouts}" deck
+  if ! [[ "$id" =~ ^[0-9]{8}-[0-9]{4}$ ]]; then
+    echo "build.sh: slides needs CONTENT_ID=YYYYMMDD-HHMM, the id of the Content release that will carry them" >&2; return 1
+  fi
+  command -v node >/dev/null 2>&1 || { echo "build.sh: slides needs Node (node not found)" >&2; return 1; }
+  [ -d slides/node_modules/pptxgenjs ] || (cd slides && npm ci --no-audit --no-fund >/dev/null)
+  mkdir -p "$out"
+  out="$(cd "$out" && pwd)"
+  for deck in "${SLIDE_DECKS[@]}"; do
+    [ -f "slides/$deck.js" ] || continue
+    CONTENT_ID="$id" HANDOUTS_DIR="$out" node "slides/$deck.js"
+  done
+}
+
 # cards: cards.html, every card on one offline page (#22).
 build_cards() {
   local dist="${DIST_DIR:-dist}"
@@ -291,6 +316,7 @@ case "${1:-help}" in
   large-upload) upload_large ;;
   open-data) bash tools/fetch_open_data.sh ;;
   setup)     build_setup ;;
+  slides)    build_slides ;;
   cards)     build_cards ;;
   content)   build_content ;;
   email)     build_email ;;

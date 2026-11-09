@@ -24,3 +24,6 @@ dist/
 /large/
 /admission_2018_2021.csv
 /hospital_load_national.parquet
+
+# Slide-deck build dependencies (slides/package-lock.json pins them)
+slides/node_modules/

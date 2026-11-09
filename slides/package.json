@@ -1,0 +1,9 @@
+{
+  "name": "workshop-slides",
+  "private": true,
+  "description": "Claude-designed slide decks (ADR 0004): node slides/<deck>.js rebuilds handouts/<deck>.pptx",
+  "dependencies": {
+    "jszip": "3.10.2",
+    "pptxgenjs": "4.0.1"
+  }
+}
