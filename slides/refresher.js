@@ -68,7 +68,7 @@ Module 1 reads three years of monthly files from three hospital systems and prov
     { time: "4.30", head: "Day 1 wrap-up", sub: "What you built, and tomorrow", ids: [] },
   ];
   const gap = 0.3;
-  const bw = (W - 2 * MARGIN - 3 * gap) / 4;
+  const bw = deck.colWidth(4, gap);
   const axisY = 1.95;
   s.addShape(deck.shapes.LINE, { x: MARGIN, y: axisY, w: W - 2 * MARGIN, h: 0, line: { color: COLOR.line, width: 2 } });
   blocks.forEach((b, i) => {
@@ -99,7 +99,7 @@ Out of time is normal, not failure. The Checkpoint loads the expected result as 
     { head: "Reveal", time: "~10 min", body: "The solution, walked through. It is in solutions/ already." },
   ];
   const gap = 0.45;
-  const bw = (W - 2 * MARGIN - 3 * gap) / 4;
+  const bw = deck.colWidth(4, gap);
   steps.forEach((st, i) => {
     const x = MARGIN + i * (bw + gap);
     deck.panel(s, x, 1.55, bw, 3.05, { fill: i === 2 ? COLOR.greenTint : COLOR.mist });
@@ -148,7 +148,7 @@ DuckDB is friendlier than Series 1 needed: you can start a query with FROM, and 
     { k: "LIMIT", d: "the first n" },
   ];
   const gap = 0.22;
-  const cw = (W - 2 * MARGIN - (clauses.length - 1) * gap) / clauses.length;
+  const cw = deck.colWidth(clauses.length, gap);
   clauses.forEach((c, i) => {
     const x = MARGIN + i * (cw + gap);
     deck.chip(s, x, 1.75, cw, 0.75, c.k, { fill: i === 0 ? COLOR.teal : COLOR.tint, color: i === 0 ? COLOR.white : COLOR.tealDark, fontSize: 14 });
@@ -157,16 +157,16 @@ DuckDB is friendlier than Series 1 needed: you can start a query with FROM, and 
   deck.arrow(s, MARGIN, 3.75, W - 2 * MARGIN, { color: COLOR.teal, width: 2.5 });
   deck.text(s, MARGIN, 3.85, 4, 0.35, "run order", { fontSize: 13, color: COLOR.teal, bold: true });
   // CTE and subquery: tables you make on the way
-  const half = (W - 2 * MARGIN - 0.4) / 2;
+  const half = deck.colWidth(2, 0.4);
   [
     { head: "WITH (a CTE)", body: "Names a query so the next one can read it like a table. Read top to bottom.", sql: "WITH beds AS (...)\nSELECT ... FROM beds" },
-    { head: "A subquery", body: "A query inside a query: one value, or a table, computed first.", sql: "WHERE beds > (SELECT avg(beds) ...)" },
+    { head: "A subquery", body: "A query inside a query: one value, or a table, computed first.", sql: "WHERE beds >\n  (SELECT avg(beds) ...)" },
   ].forEach((b, i) => {
     const x = MARGIN + i * (half + 0.4);
     deck.panel(s, x, 4.55, half, 2.1, { fill: COLOR.mist });
     deck.text(s, x + 0.3, 4.7, half - 0.6, 0.45, b.head, { fontFace: FONT.head, fontSize: 20, bold: true });
-    deck.text(s, x + 0.3, 5.2, 2.6, 1.3, b.body, { fontSize: 14 });
-    deck.code(s, x + 3.1, 5.2, half - 3.4, 1.2, b.sql, { max: 13, valign: "middle" });
+    deck.text(s, x + 0.3, 5.2, 2.3, 1.3, b.body, { fontSize: 14 });
+    deck.code(s, x + 2.8, 5.2, half - 3.1, 1.2, b.sql, { max: 13, valign: "middle" });
   });
 }
 

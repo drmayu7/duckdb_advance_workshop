@@ -35,7 +35,7 @@ Stress: synthetic data. The patients and admissions are made up; the hospital na
     { n: "3", head: "Hospital load", body: "Which hospitals carry the admission load" },
   ];
   const gap = 0.4;
-  const cw = (W - 2 * MARGIN - 2 * gap) / 3;
+  const cw = deck.colWidth(3, gap);
   qs.forEach((q, i) => {
     const x = MARGIN + i * (cw + gap);
     deck.panel(s, x, 1.5, cw, 3.7, { fill: COLOR.mist });
@@ -62,7 +62,7 @@ The manifest is the sender's promise: how many records each file holds. Every Mo
     { year: "2020", name: "New system", fmt: "Parquet", files: "data/raw/2020-*.parquet", note: "Typed columns, plus ward and admission type" },
   ];
   const gap = 0.4;
-  const cw = (W - 2 * MARGIN - 2 * gap) / 3;
+  const cw = deck.colWidth(3, gap);
   s.addShape(deck.shapes.LINE, { x: MARGIN, y: 1.95, w: W - 2 * MARGIN, h: 0, line: { color: COLOR.line, width: 2 } });
   sys.forEach((y, i) => {
     const x = MARGIN + i * (cw + gap);
@@ -105,7 +105,7 @@ Participants can take the large dataset home: dist/duckdb-large-2018-2021.zip.`,
 The picture to leave in their heads before the demo. CSV: one line per row, every value as text, so DuckDB must read every byte and guess every type. Parquet: each column stored together and compressed, the types written down, and small statistics (row count, min and max per block) in the file footer.
 
 So Parquet answers "how many rows?" from the footer, reads only the columns a query names, and skips blocks whose min and max can't match the filter.`);
-  const half = (W - 2 * MARGIN - 0.5) / 2;
+  const half = deck.colWidth(2, 0.5);
   // CSV side
   deck.panel(s, MARGIN, 1.45, half, 5.25, { fill: COLOR.mist });
   deck.chip(s, MARGIN + 0.3, 1.65, 1.4, 0.45, "CSV", { fill: COLOR.amber, color: COLOR.ink, fontSize: 16 });
@@ -176,7 +176,7 @@ One definition to stress for C1: a record is not a line. A quoted address can ho
     { head: "Count against the source", fn: "rows read = manifest", body: "Every file gave exactly the rows its sender promised." },
   ];
   const gap = 0.55;
-  const cw = (W - 2 * MARGIN - 2 * gap) / 3;
+  const cw = deck.colWidth(3, gap);
   steps.forEach((st, i) => {
     const x = MARGIN + i * (cw + gap);
     deck.panel(s, x, 1.55, cw, 3.6, { fill: i === 2 ? COLOR.greenTint : COLOR.mist });
@@ -251,7 +251,7 @@ How to read SUMMARIZE: min and max first. On text columns they compare strings, 
     border: { type: "solid", color: COLOR.line, pt: 1 }, fill: { color: COLOR.white }, rowH: 0.5, valign: "middle",
   });
   deck.text(s, MARGIN, 3.65, W - 2 * MARGIN, 0.35, "SUMMARIZE FROM 'data/open/bed_utilisation.csv' (excerpt): real MoH open data", { fontSize: 13, italic: true, color: COLOR.muted });
-  const half = (W - 2 * MARGIN - 0.4) / 2;
+  const half = deck.colWidth(2, 0.4);
   [
     { head: "Read min and max first", body: "A double space, negative beds, a utilisation of −1525\u00a0%: the odd values sit at the ends." },
     { head: "COLUMNS(*): every column at once", body: "count(*) FILTER (WHERE COLUMNS(*) IS NULL) gives one count per column, in the table's order." },

@@ -12,6 +12,8 @@ Reuse these rather than writing the content into the script:
 
 Every slide takes speaker notes; the build fails without them. Notes and Reveal points may name a card's key definitions (ADR 0004), but never paste the card's text.
 
+Decks ship to Participants: `handouts/` is in every Content release, speaker notes included. So no slide or note may carry anything from `capstone/hints.md`, the Held-back defects or `capstone_truth/`, and only the closing deck, after the 2.45 reveal on Day 3, may show the repo URL (`tests/content_release.sh` looks inside every deck).
+
 ## Demo SQL
 
 Each demo teaches its technique on other data (open data or values typed into the cell), so it gives away no Challenge answer. Add the deck to the loop in `tests/day1_demos.sh` or `tests/day2_demos.sh` so every demo runs on 1.5.6. A demo that needs more than the bundle (the S3 bucket, a Google sign-in) is skipped there, and says so in the test's header.
@@ -32,4 +34,4 @@ The tests check the text; looking at the slides is the QA. After each build:
 
 1. `tools/render_deck.sh handouts/<deck>.pptx <scratch-dir>`, then read every `sheet-N.png` it prints (nine slides each), and a single `s-NN.jpg` for detail.
 2. Run the `pptx` skill's validator on the deck (`uv run --with lxml --with defusedxml --with python-pptx --with pillow python <pptx-skill>/scripts/office/validate.py <deck>.pptx`).
-3. Fix what you see in the script, rebuild, and re-render. Typical first-render faults: text wrapping mid-word in chips, code panels shrunk below ~13 pt by one long line, and boxes overlapping when a title wraps.
+3. Fix what you see in the script, rebuild, and re-render only those slides: `tools/render_deck.sh <deck>.pptx <dir> 4,14,22` writes `sheet-picked.png`. The build already fails on code below 11 pt and on chip text wider than its chip (`theme.js` layout faults, named by slide), so the render is for what no estimate catches: boxes overlapping when a title wraps, uneven gaps, empty halves.

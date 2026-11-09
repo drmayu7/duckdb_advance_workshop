@@ -132,7 +132,7 @@ PARTITION BY says what the group is; ORDER BY inside OVER says the order for ran
   ];
   // Left: GROUP BY
   const lx = MARGIN;
-  const half = (W - 2 * MARGIN - 0.5) / 2;
+  const half = deck.colWidth(2, 0.5);
   deck.text(s, lx, 1.45, half, 0.45, "GROUP BY state", { fontFace: FONT.code, fontSize: 18, bold: true, color: COLOR.tealDark });
   rows.forEach((r, i) => {
     const y = 2.0 + i * 0.5;
@@ -241,7 +241,7 @@ The recipe has four steps, and they're the same for any runs: refills, shifts, s
     { n: "4", f: "GROUP BY", b: "one row per run" },
   ];
   const gap = 0.35;
-  const cw = (W - 2 * MARGIN - 3 * gap) / 4;
+  const cw = deck.colWidth(4, gap);
   steps.forEach((st, i) => {
     const x = MARGIN + i * (cw + gap);
     deck.panel(s, x, 4.45, cw, 2.2, { fill: COLOR.mist });
@@ -317,7 +317,7 @@ Two traps on the card. First, take lead() over all the patient's episodes before
     { head: "Count with FILTER", body: "index episodes and readmissions in one GROUP BY state; the rate reuses both aliases.", fill: COLOR.mist },
   ];
   const gap = 0.35;
-  const cw = (W - 2 * MARGIN - 2 * gap) / 3;
+  const cw = deck.colWidth(3, gap);
   cards.forEach((c, i) => {
     const x = MARGIN + i * (cw + gap);
     deck.panel(s, x, 3.75, cw, 2.9, { fill: c.fill });
@@ -386,9 +386,9 @@ C10 does both: the MOH dengue CSV has one column per state, so it is unpivoted, 
   deck.text(s, lx + 2.75, 3.0, 1.2, 0.4, "PIVOT", { fontSize: 13, bold: true, color: COLOR.tealDark, fontFace: FONT.code, align: "center" });
   wide(lx + 3.95, 2.0, ["state", "2018", "2019", "2020"], "Wide again: a column per year");
   // the code
-  deck.code(s, MARGIN, 4.55, (W - 2 * MARGIN - 0.4) / 2, 2.1,
+  deck.code(s, MARGIN, 4.55, deck.colWidth(2, 0.4), 2.1,
     "UNPIVOT wide_table\nON COLUMNS(* EXCLUDE (year))\nINTO NAME state VALUE n;", { max: 17, valign: "middle" });
-  deck.code(s, MARGIN + (W - 2 * MARGIN + 0.4) / 2, 4.55, (W - 2 * MARGIN - 0.4) / 2, 2.1,
+  deck.code(s, MARGIN + (W - 2 * MARGIN + 0.4) / 2, 4.55, deck.colWidth(2, 0.4), 2.1,
     "PIVOT long_table\nON year\nUSING sum(n)\nGROUP BY state;", { max: 17, valign: "middle" });
 }
 
@@ -529,7 +529,7 @@ Walk the four boxes: the demo's way (your existing AWS login, credential_chain; 
 
 Since 1.4.1, CREATE SECRET checks that the credentials exist when you create it; VALIDATION 'none' skips that check (for example, before an SSO login).`);
   const gap = 0.35;
-  const cw = (W - 2 * MARGIN - gap) / 2;
+  const cw = deck.colWidth(2, gap);
   const boxes = [
     { head: "Your AWS login, no keys", sql: "CREATE SECRET (TYPE s3,\n  PROVIDER credential_chain, CHAIN 'sso',\n  PROFILE 'me', REGION 'ap-southeast-5');", note: "What the demo used. Needs the aws extension (in your bundle)." },
     { head: "Keys, if you must", sql: "CREATE SECRET (TYPE s3, PROVIDER config,\n  KEY_ID '…', SECRET '…', REGION '…');", note: "Never commit keys, or paste them into a notebook.", warn: true },
@@ -562,7 +562,7 @@ The R notebook runs on the CRAN package, DuckDB 2.0: that's why the materials sh
 
 The notebooks pick up the State Health Brief where C10 ends. They ship with the guide, by 20 November. A third idea for Python users: rerun the solutions chain as a job and diff it against expected/, which is how a SQL pipeline gets automated.`);
   const gap = 0.4;
-  const cw = (W - 2 * MARGIN - gap) / 2;
+  const cw = deck.colWidth(2, gap);
   const cols = [
     { head: "DuckDB + Python", libs: ["duckdb 1.5.6", "pandas", "matplotlib"], code: "import duckdb\ndf = duckdb.sql(\n  \"FROM 'expected/state_brief.parquet'\"\n).df()" },
     { head: "DuckDB + R", libs: ["duckdb (CRAN)", "DBI", "ggplot2", "dbplyr"], code: "library(DBI)\ncon <- dbConnect(duckdb::duckdb())\ndf <- dbGetQuery(con,\n  \"FROM 'expected/state_brief.parquet'\")" },

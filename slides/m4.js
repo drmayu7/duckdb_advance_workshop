@@ -56,7 +56,7 @@ Read the plan once. The tracks are self-paced: anyone may switch track or stop e
   ];
   deck.timeline(s, blocks, { h: 1.4, end: "4.30" });
   const span = W - 2 * MARGIN;
-  const half = (span - 0.4) / 2;
+  const half = deck.colWidth(2, 0.4);
   deck.panel(s, MARGIN, 4.3, half, 2.35, { fill: COLOR.tint });
   deck.text(s, MARGIN + 0.35, 4.45, half - 0.7, 0.5, "Extension tracks", { fontFace: FONT.head, fontSize: 21, bold: true, color: COLOR.tealDark });
   deck.text(s, MARGIN + 0.35, 5.0, half - 0.7, 1.55, "Pick any two of three. Each starts from the Checkpoints, so this morning's state doesn't matter. Card, Self-check and solution, as always.", { fontSize: 16 });
@@ -79,7 +79,7 @@ Each track starts from Checkpoints, so pick by interest, not by how this morning
     { card: spatial, ext: "spatial", load: "LOAD spatial;", q: "Where is dengue, district by district?", what: "A crosswalk, a polygon join, a map layer" },
   ];
   const gap = 0.35;
-  const cw = (W - 2 * MARGIN - 2 * gap) / 3;
+  const cw = deck.colWidth(3, gap);
   cols.forEach((c, i) => {
     const x = MARGIN + i * (cw + gap);
     deck.panel(s, x, 1.4, cw, 5.3, { fill: COLOR.mist });
@@ -126,7 +126,7 @@ Walk the room. The usual snags: a community extension that wasn't loaded (LOAD i
     { n: "3", head: "Core, Self-check", body: "0 rows differ means done. Stretch rows if you have time; the second track if you don't." },
   ];
   const gap = 0.5;
-  const cw = (W - 2 * MARGIN - 2 * gap) / 3;
+  const cw = deck.colWidth(3, gap);
   steps.forEach((st, i) => {
     const x = MARGIN + i * (cw + gap);
     deck.panel(s, x, 1.5, cw, 3.3, { fill: COLOR.mist });
@@ -135,7 +135,7 @@ Walk the room. The usual snags: a community extension that wasn't loaded (LOAD i
     deck.text(s, x + 0.3, 2.7, cw - 0.6, 2.0, st.body, { fontSize: 16 });
     if (i < 2) deck.arrow(s, x + cw + 0.08, 3.15, gap - 0.16, { color: COLOR.teal, width: 2.5 });
   });
-  const tw = (W - 2 * MARGIN - 0.4) / 2;
+  const tw = deck.colWidth(2, 0.4);
   [
     { t: "2.15 – 2.55", head: "Your first track" },
     { t: "2.55 – 3.35", head: "Your second track" },
@@ -199,7 +199,7 @@ The key sentence of the brief: don't assume 2021 is as clean as the last extract
     deck.chip(s, MARGIN, y, 6.6, 0.55, f.f, { fill: i === 1 ? COLOR.amberTint : COLOR.tint, color: COLOR.text, fontSize: 13, align: "left", margin: 10 });
     deck.text(s, MARGIN + 6.85, y - 0.1, W - 2 * MARGIN - 6.85, 0.75, f.b, { fontSize: 15, valign: "middle" });
   });
-  const half = (W - 2 * MARGIN - 0.4) / 2;
+  const half = deck.colWidth(2, 0.4);
   deck.panel(s, MARGIN, 4.75, half, 1.9, { fill: COLOR.coralTint });
   deck.text(s, MARGIN + 0.35, 4.85, half - 0.7, 0.5, "New export, new problems", { fontFace: FONT.head, fontSize: 20, bold: true, color: COLOR.coral });
   deck.text(s, MARGIN + 0.35, 5.4, half - 0.7, 1.15, "Don't assume 2021 is as clean as the last extract, or dirty in the same ways.", { fontSize: 16 });
@@ -217,7 +217,7 @@ Each Angle is one question of the brief and one summary table. The column names 
 
 Suggested roles, not enforced: the Driver holds the official pipeline and outputs on their laptop; one or two data-quality investigators load the same files on their own laptops and hunt for problems; an analyst/presenter writes brief.md. Everyone speaks in the presentation.`);
   const gap = 0.35;
-  const cw = (W - 2 * MARGIN - 2 * gap) / 3;
+  const cw = deck.colWidth(3, gap);
   ANGLES.forEach((a, i) => {
     const x = MARGIN + i * (cw + gap);
     deck.panel(s, x, 1.4, cw, 3.55, { fill: COLOR.mist });
@@ -286,7 +286,7 @@ The brief has four sanity checks, each a question a careful analyst asks before 
     { n: "4", when: "after CLEAN", head: "2021 against 2020", body: "A state or hospital that moves by a third needs an explanation." },
   ];
   const gap = 0.3;
-  const cw = (W - 2 * MARGIN - 3 * gap) / 4;
+  const cw = deck.colWidth(4, gap);
   checks.forEach((c, i) => {
     const x = MARGIN + i * (cw + gap);
     deck.panel(s, x, 1.45, cw, 3.7, { fill: COLOR.mist });
@@ -356,7 +356,7 @@ Questions about SQL syntax are fine at any time. Questions like "what's wrong wi
     { t: "10.30, Day 3", head: "No suspect yet?", body: "Your team gets its Angle's Hint card: a symptom to check, never the cause or the fix.", fill: COLOR.amberTint, chip: COLOR.amber },
   ];
   const gap = 0.35;
-  const cw = (W - 2 * MARGIN - 2 * gap) / 3;
+  const cw = deck.colWidth(3, gap);
   items.forEach((it, i) => {
     const x = MARGIN + i * (cw + gap);
     deck.panel(s, x, 1.5, cw, 3.6, { fill: it.fill });
@@ -383,7 +383,7 @@ At 4.20 ask each team: does sanity check 1 come back with 0 rows? A team that's 
     { n: "3", head: "Sanity check 1", body: "Rows read against manifest.csv, file by file. Want 0 rows." },
   ];
   const gap = 0.5;
-  const cw = (W - 2 * MARGIN - 2 * gap) / 3;
+  const cw = deck.colWidth(3, gap);
   steps.forEach((st, i) => {
     const x = MARGIN + i * (cw + gap);
     deck.panel(s, x, 1.5, cw, 3.3, { fill: COLOR.mist });
