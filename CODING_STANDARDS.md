@@ -17,3 +17,7 @@ A check over a set (slides, cards, files, rows) also asserts the set is not empt
 A ticket names the Stretch it requires. A card may add more Stretch rows, as long as each one runs offline with extensions already in the bundle (`setup/install.sql`); more rows than the ticket names is not scope creep.
 
 `build.sh test` runs every `tests/*.sql` and `tests/*.sh` it finds. A new test file needs no wiring.
+
+## Decks
+
+A layout drawn on more than one deck moves into `slides/theme.js` as a builder, as `timeline()`, `challengeSlide()` and `colWidth()` did; a deck script keeps only what is particular to its slides. Review flags the second hand-drawn copy (the Module 3 and 4 schedule bars were one).

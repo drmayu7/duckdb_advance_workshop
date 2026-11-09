@@ -65,10 +65,18 @@ tail -n +2 "$extracted/content_manifest.csv" | sort >"$tmp/manifest"
 if diff -q "$tmp/manifest" "$tmp/actual" >/dev/null; then ok "content_manifest.csv matches the zip"
 else bad "content_manifest.csv differs from the zip:"; diff "$tmp/manifest" "$tmp/actual" | grep '^[<>]' | head | sed 's/^/  /'; fi
 
-if leaks="$(grep -r -l -i -e 'drmayu7' -e 'duckdb_advance_workshop' -e 'duckdb-advance-workshop' -e 'github\.com' "$extracted")"; then
-  bad "repo URL or name found in: $leaks"
+# No repo URL before the 13 Nov reveal, in any file. A deck or document is a zip
+# whose XML is compressed, so grep sees into it only once it is unzipped.
+unpacked="$tmp/unpacked"; mkdir -p "$unpacked"
+n=0
+while IFS= read -r -d '' doc; do
+  n=$((n + 1)); mkdir -p "$unpacked/${doc#"$extracted"/}"; unzip -q "$doc" -d "$unpacked/${doc#"$extracted"/}"
+done < <(find "$extracted" \( -name '*.pptx' -o -name '*.docx' -o -name '*.xlsx' \) -print0)
+if [ "$n" -gt 0 ]; then ok "looked inside $n deck(s) and document(s)"; else bad "no deck in the release to look inside"; fi
+if leaks="$(grep -r -l -i -e 'drmayu7' -e 'duckdb_advance_workshop' -e 'duckdb-advance-workshop' -e 'github\.com' "$extracted" "$unpacked")"; then
+  bad "repo URL or name found in: $(xargs <<<"${leaks//$tmp\//}")"
 else
-  ok "no repo URL or name in any file"
+  ok "no repo URL or name in any file, decks included"
 fi
 
 # cards.html: one offline page holding every card, with nothing fetched from the network.

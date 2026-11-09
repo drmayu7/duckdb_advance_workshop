@@ -46,6 +46,12 @@ const W = 13.333; // LAYOUT_WIDE
 const H = 7.5;
 const MARGIN = 0.6;
 
+// Layout checks. LibreOffice and PowerPoint render these fonts at about these
+// widths (in ems per character, plus 10% for bold and insets); the build fails on code shrunk below CODE_MIN
+// points, and on a chip whose text is wider than the chip, before anyone renders.
+const CODE_MIN = 11;
+const EM = { [FONT.code]: 0.6, [FONT.body]: 0.5, [FONT.head]: 0.55 };
+
 // ---------------------------------------------------------------------------
 // Readers
 
@@ -312,6 +318,7 @@ class Deck {
     this.pres.theme = { headFontFace: FONT.head, bodyFontFace: FONT.body };
     this.shapes = this.pres.shapes;
     this.count = 0;
+    this.faults = [];
     this.defineLayouts();
   }
 
@@ -374,10 +381,26 @@ class Deck {
     return s;
   }
 
+  /** A layout fault on the current slide; write() fails if there are any. */
+  fault(msg) {
+    this.faults.push(`${this.name}: slide ${this.count}: ${msg}`);
+  }
+
+  /** The width of each of n columns across the slide, gap inches apart. */
+  colWidth(n, gap) {
+    return (W - 2 * MARGIN - (n - 1) * gap) / n;
+  }
+
   // ----- small composable pieces ------------------------------------------
 
   /** A rounded chip: the deck's motif for tables, files and codes. */
   chip(s, x, y, w, h, text, o = {}) {
+    // A chip is one line: its text must fit its width.
+    const plain = Array.isArray(text) ? text.map((r) => r.text).join("") : text;
+    const size = o.fontSize || 16;
+    const margin = ((o.margin !== undefined ? o.margin : 4) * 2) / 72;
+    const wide = Math.max(...String(plain).split("\n").map((l) => (1.1 * l.length * size * (EM[o.fontFace || FONT.code] || 0.55)) / 72));
+    if (wide > w - margin + 0.02) this.fault(`chip "${plain}" needs ${wide.toFixed(2)} in, has ${(w - margin).toFixed(2)} in`);
     s.addText(Array.isArray(text) ? text : [{ text, options: {} }], {
       shape: this.shapes.ROUNDED_RECTANGLE,
       x, y, w, h,
@@ -463,6 +486,7 @@ class Deck {
     const pad = Math.min(0.25, h * 0.18);
     if (o.wrap) sql = wrapSql(sql, o.wrap);
     const size = o.fontSize || codeSize(sql, w - 2 * pad, h - 2 * pad, o.max || 18);
+    if (size < CODE_MIN) this.fault(`code at ${size} pt (minimum ${CODE_MIN}): shorten its longest line or split it ("${sql.split("\n")[0]}")`);
     const lines = sql.split("\n");
     if (o.fit) h = Math.min(h, (lines.length * size * 1.2) / 72 + 2 * pad + 0.1);
     s.addShape(this.shapes.ROUNDED_RECTANGLE, { x, y, w, h, rectRadius: 0.1, fill: { color: COLOR.codeBg }, line: { type: "none" } });
@@ -613,7 +637,7 @@ class Deck {
       { n: "2", head: "Self-check", body: [{ text: "0", options: { bold: true, fontFace: FONT.code } }, { text: " rows differ from the expected result means done.", options: {} }] },
       { n: "3", head: "Out of time?", body: [{ text: "Load the Checkpoint and carry on. Nobody falls behind.", options: {} }] },
     ];
-    const cw = (W - 2 * MARGIN - 2 * 0.3) / 3;
+    const cw = this.colWidth(3, 0.3);
     cols.forEach((c, i) => {
       const x = MARGIN + i * (cw + 0.3);
       this.panel(s, x, y, cw, 1.4, { fill: COLOR.mist });
@@ -756,7 +780,7 @@ class Deck {
     const s = this.content("Fix sheet: no code, still stuck", notes);
     const perCol = Math.ceil(plain.length / 2);
     const gap = 0.35;
-    const cw = (W - 2 * MARGIN - gap) / 2;
+    const cw = this.colWidth(2, gap);
     const rowH = (6.8 - 1.35) / perCol;
     plain.forEach((r, i) => {
       const col = Math.floor(i / perCol);
@@ -774,7 +798,7 @@ class Deck {
     const s = this.content(title, notes);
     const n = cards.length;
     const gap = 0.4;
-    const cw = (W - 2 * MARGIN - (n - 1) * gap) / n;
+    const cw = this.colWidth(n, gap);
     const y = 2.75;
     const longest = Math.max(...cards.map((c) => c.output.length));
     const size = Math.min(16, Math.floor(((cw - 0.2) * 72) / (longest * 0.6)));
@@ -801,6 +825,7 @@ class Deck {
   }
 
   async write() {
+    if (this.faults.length) throw new Error(`layout faults:\n  ${this.faults.join("\n  ")}`);
     const dir = process.env.HANDOUTS_DIR || path.join(REPO, "handouts");
     fs.mkdirSync(dir, { recursive: true });
     const file = path.join(dir, `${this.name}.pptx`);

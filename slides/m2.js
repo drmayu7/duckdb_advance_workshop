@@ -39,7 +39,7 @@ admission_clean is where Day 2's analysis starts: hospital load, episodes of car
 The C4 cycle, 2.00. The key idea: on messy data, a cast that stops the query at the first bad value is useless; a cast that gives NULL lets you finish, then count and inspect what failed. "Quiet" is only safe if you count the NULLs afterwards.
 
 try_strptime does the same for dates, and takes a list of formats: the first that fits wins. A whole number no format reads is often an Excel serial day number (day 0 is 1899-12-30).`);
-  const half = (W - 2 * MARGIN - 0.4) / 2;
+  const half = deck.colWidth(2, 0.4);
   [
     { head: "CAST", sql: "CAST('tiada' AS INTEGER)", out: "Error: the whole query stops", fill: COLOR.coralTint, chip: COLOR.coral },
     { head: "TRY_CAST", sql: "TRY_CAST('tiada' AS INTEGER)", out: "NULL: the query finishes; count the NULLs", fill: COLOR.greenTint, chip: COLOR.green },
@@ -259,7 +259,7 @@ Stretch S1 and S2 (IC date part vs dob, and the odd/even last digit for sex) are
 Tomorrow: arrive by 9.00, drop the Day 2 Content release zip, unopened, into updates and relaunch, exactly like this morning. The id will be on the slide. Close the DuckDB UI and launcher before you leave, so the Work database is closed cleanly.`);
   const all = [...cardsOf("m1"), ...cardsOf("m2")];
   const gap = 0.25;
-  const cw = (W - 2 * MARGIN - (all.length - 1) * gap) / all.length;
+  const cw = deck.colWidth(all.length, gap);
   const longest = Math.max(...all.map((c) => c.output.length));
   const size = Math.min(15, Math.floor(((cw - 0.2) * 72) / (longest * 0.6)));
   all.forEach((c, i) => {
@@ -267,7 +267,7 @@ Tomorrow: arrive by 9.00, drop the Day 2 Content release zip, unopened, into upd
     deck.dot(s, x + cw / 2 - 0.35, 1.5, 0.7, cardLabel(c), { fontSize: 18, fill: COLOR.green });
     deck.chip(s, x, 2.4, cw, 0.6, c.output, { fill: COLOR.greenTint, color: COLOR.text, fontSize: size, margin: 2 });
   });
-  const half = (W - 2 * MARGIN - 0.4) / 2;
+  const half = deck.colWidth(2, 0.4);
   deck.panel(s, MARGIN, 3.45, half, 3.2, { fill: COLOR.mist });
   deck.text(s, MARGIN + 0.35, 3.6, half - 0.7, 0.5, "The habits", { fontFace: FONT.head, fontSize: 21, bold: true });
   deck.text(s, MARGIN + 0.35, 4.15, half - 0.7, 2.4, [
