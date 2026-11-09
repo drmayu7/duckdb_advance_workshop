@@ -26,6 +26,16 @@ The synthetic admission export that Module 1 starts from (`cards/c01-read-csv.md
 
 `state`, `district`, `postcode` and `address` are where the patient lives. `secondary_dx` lists secondary diagnoses as ICD-10 codes separated by `; `.
 
+## Capstone extract 2021 (`data/capstone/`)
+
+The synthetic 2021 admission export the Capstone starts from (`capstone/brief.md`): one row per admission, with the patient's details repeated on every row, in one file per admit month and source system. By 2021 every hospital is on the new system except Sabah's, which still export from the old HIS. All files are generated, not downloaded. Like any real export, it may hold data-quality problems; finding them is part of the Capstone.
+
+| Files | Source system | Format |
+|---|---|---|
+| `2021-01.parquet` … `2021-12.parquet` | New system | As `data/raw/2020-*.parquet`: typed `dob`, `admit_ts` and `discharge_ts`, plus `ward` and `admission_type`. Every hospital outside Sabah. |
+| `2021-01-sabah.csv` … `2021-12-sabah.csv` | Old HIS | As `data/raw/2018-*.csv`: a header row with Malay column names, dates `DD/MM/YYYY`. Sabah's hospitals. |
+| `manifest.csv` | – | `file`, `rows`: how many records each file holds. |
+
 ## Large dataset 2018–2021 (`large/`, not in the bundle)
 
 About 30 million clean, synthetic admissions for 2018–2021, for the facilitator's two demos: CSV vs Parquet in Module 1 (`demos/m1/csv-vs-parquet.sql`) and the live S3 demo in Module 3 (`demos/m3/s3-demo.sql`). It comes from the same generator as the small data, at a bigger scale, so it has the clean admission table's columns and no data-quality defects. It is never committed and is not in any release: `./build.sh large` writes it (a few minutes) along with the take-home zip `dist/duckdb-large-2018-2021.zip`, which goes on Drive, and `./build.sh large-upload` copies it to the private bucket `s3://duckdb-series2-2026/large/`.

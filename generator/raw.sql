@@ -519,9 +519,14 @@ COPY (SELECT file, count(*) AS rows FROM rx GROUP BY file ORDER BY file)
 -- The Answer key, located by file and record number (1 = the first record after any header).
 -- A whole-record defect (AD01, AD02, AD03) has no column; its dirty_value names
 -- the record it copies or continues. SH01 is on an open-data file, not the extract.
+-- capstone.sql adds the 2021 rows and writes generator/dq_answer_key.parquet;
+-- seq keeps each extract's rows in this order.
 CREATE TABLE rx_row AS
 SELECT rid, admission_id, file, row_number() OVER (PARTITION BY file ORDER BY rid) AS row_no FROM rx;
-COPY (
+CREATE TABLE answer_key AS
+SELECT row_number() OVER (ORDER BY file, row_no NULLS FIRST, pos NULLS FIRST, defect_code, column_name) AS seq,
+       * EXCLUDE (pos)
+FROM (
   SELECT CASE WHEN dq.file LIKE 'open/%' THEN 'data/' ELSE 'data/raw/' END || dq.file AS file,
          r.row_no,
          CASE WHEN dq.defect_code = 'SH01' THEN dq.col
@@ -531,10 +536,9 @@ COPY (
                              WHEN 'AD02' THEN 'older version of record ' || o.row_no
                              WHEN 'AD03' THEN 'continues the stay in record ' || o.row_no || ' of data/raw/' || o.file
                              ELSE dq.dirty_value END AS dirty_value,
-         dq.clean_value, r.admission_id
+         dq.clean_value, r.admission_id, c.pos
   FROM (SELECT *, CASE WHEN defect_code IN ('AD01', 'AD02', 'AD03') THEN dirty_value::BIGINT END AS of_rid FROM dq) dq
   LEFT JOIN raw_columns c USING (col)
   LEFT JOIN rx_row r USING (rid)
   LEFT JOIN rx_row o ON o.rid = dq.of_rid
-  ORDER BY file, row_no NULLS FIRST, c.pos NULLS FIRST, defect_code, column_name
-) TO 'generator/dq_answer_key.parquet' (FORMAT parquet, COMPRESSION zstd);
+);

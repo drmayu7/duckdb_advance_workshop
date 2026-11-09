@@ -1,7 +1,8 @@
--- The Answer key (#7, #23) on the committed generator/dq_answer_key.parquet and
--- data/raw/ (tests/generator_determinism.sh proves both are current): every
--- row points at a real place in the Raw extract, and the 2018–2020 extract
--- carries exactly the defects decided for it so far.
+-- The Answer key (#7, #23, #31) on the committed generator/dq_answer_key.parquet,
+-- data/raw/ and data/capstone/ (tests/generator_determinism.sh proves they are
+-- current): every row points at a real place in a Raw extract, the 2018–2020
+-- extract carries exactly the taught defects, and the 2021 Capstone extract
+-- exactly the three Held-back defects.
 CREATE TABLE answer_key AS FROM 'generator/dq_answer_key.parquet';
 
 -- Every cell of the Raw extract as text: (file, row_no, column_name, value).
@@ -14,19 +15,32 @@ CREATE TABLE r19 AS SELECT *, row_number() OVER (PARTITION BY filename ORDER BY 
 CREATE TABLE r20 AS
 SELECT COLUMNS(* EXCLUDE (file_row_number))::VARCHAR, file_row_number + 1 AS row_no
 FROM read_parquet('data/raw/2020-*.parquet', filename = true, file_row_number = true);
+-- The 2021 Capstone extract: Sabah's old HIS CSVs and the new system's Parquet.
+CREATE TABLE csv_2021 AS
+FROM read_csv('data/capstone/2021-*-sabah.csv', header = true, all_varchar = true, filename = true);
+CREATE TABLE r21c AS SELECT *, row_number() OVER (PARTITION BY filename ORDER BY rowid) AS row_no FROM csv_2021;
+CREATE TABLE r21p AS
+SELECT COLUMNS(* EXCLUDE (file_row_number))::VARCHAR, file_row_number + 1 AS row_no
+FROM read_parquet('data/capstone/2021-*.parquet', filename = true, file_row_number = true);
 -- UNPIVOT drops NULL cells, so NULL travels as chr(0) and comes back afterwards.
 CREATE MACRO keep_nulls(t) AS TABLE
   SELECT filename, row_no, coalesce(COLUMNS(* EXCLUDE (filename, row_no)), chr(0)) FROM query_table(t);
 CREATE TABLE u18 AS FROM keep_nulls('r18');
 CREATE TABLE u19 AS FROM keep_nulls('r19');
 CREATE TABLE u20 AS FROM keep_nulls('r20');
+CREATE TABLE u21c AS FROM keep_nulls('r21c');
+CREATE TABLE u21p AS FROM keep_nulls('r21p');
 CREATE TABLE cells AS
 SELECT filename, row_no, column_name, nullif(value, chr(0)) AS value
 FROM (UNPIVOT u18 ON COLUMNS(* EXCLUDE (filename, row_no)) INTO NAME column_name VALUE value
       UNION ALL
       UNPIVOT u19 ON COLUMNS(* EXCLUDE (filename, row_no)) INTO NAME column_name VALUE value
       UNION ALL
-      UNPIVOT u20 ON COLUMNS(* EXCLUDE (filename, row_no)) INTO NAME column_name VALUE value);
+      UNPIVOT u20 ON COLUMNS(* EXCLUDE (filename, row_no)) INTO NAME column_name VALUE value
+      UNION ALL
+      UNPIVOT u21c ON COLUMNS(* EXCLUDE (filename, row_no)) INTO NAME column_name VALUE value
+      UNION ALL
+      UNPIVOT u21p ON COLUMNS(* EXCLUDE (filename, row_no)) INTO NAME column_name VALUE value);
 
 -- Every file's columns with their types: text for CSV and JSON, typed in Parquet.
 CREATE TABLE file_columns AS
@@ -200,3 +214,65 @@ SELECT assert_eq('SH01 rows are on the dengue CSV and map KL and Labuan to their
   || ' ' || (SELECT clean_value FROM answer_key WHERE defect_code = 'SH01' AND column_name = 'WP KUALA LUMPUR')
   || ' ' || (SELECT clean_value FROM answer_key WHERE defect_code = 'SH01' AND column_name = 'WP LABUAN'),
   'data/open/dengue_state_age_2018_2021.csv WILAYAH PERSEKUTUAN KUALA LUMPUR WILAYAH PERSEKUTUAN LABUAN');
+
+-- ------------------------------------------- 2021 Capstone extract (#31)
+-- Only the three Held-back defects, and only here (#10): ID06 for Angle A,
+-- DX04 for Angle B, DT02 for Angle C.
+SELECT assert_eq('2021 defect codes are the Held-back defects only',
+                 string_agg(DISTINCT defect_code, ',' ORDER BY defect_code), 'DT02,DX04,ID06')
+FROM answer_key WHERE file LIKE 'data/capstone/%';
+
+SELECT assert_eq('no Held-back defect outside the 2021 extract', count(*), 0)
+FROM answer_key WHERE defect_code IN ('DT02', 'DX04', 'ID06') AND file NOT LIKE 'data/capstone/%';
+
+SELECT assert_eq('every 2021 key row is a cell defect of a 2021 admission', count(*), 0)
+FROM answer_key k LEFT JOIN 'generator/truth/admission.parquet' a USING (admission_id)
+WHERE k.file LIKE 'data/capstone/%' AND (k.row_no IS NULL OR k.column_name IS NULL OR year(a.admit_ts) IS DISTINCT FROM 2021);
+
+-- ID06: a non-MyKad identifier (a letter, then fewer than 9 digits), the same
+-- one on every admission of its patient and never shared; no MyKad to clean to.
+SELECT assert_eq('ID06 values are not MyKad numbers, and have no clean MyKad', count(*), 0)
+FROM answer_key WHERE defect_code = 'ID06'
+  AND (clean_value IS NOT NULL OR column_name NOT IN ('no_kp', 'mykad')
+       OR NOT regexp_full_match(dirty_value, '[A-Z]{1,2}\d{6,8}'));
+
+SELECT assert_eq('each ID06 patient has one identifier, and each identifier one patient', count(*), 0)
+FROM (SELECT count(DISTINCT patient_id) AS patients, count(DISTINCT dirty_value) AS identifiers
+      FROM (SELECT a.patient_id, k.dirty_value
+            FROM answer_key k JOIN 'generator/truth/admission.parquet' a USING (admission_id)
+            WHERE k.defect_code = 'ID06')
+      GROUP BY GROUPING SETS ((patient_id), (dirty_value)))
+WHERE patients > 1 OR identifiers > 1;
+
+SELECT assert_eq('ID06 is in both systems, more than a fifth of it in Sabah',
+  (SELECT count(DISTINCT regexp_extract(file, '\.(\w+)$', 1)) FROM answer_key WHERE defect_code = 'ID06') = 2
+  AND (SELECT count(*) FROM answer_key WHERE defect_code = 'ID06' AND file LIKE '%-sabah.csv')
+      > (SELECT count(*) FROM answer_key WHERE defect_code = 'ID06') / 5, true);
+
+-- DX04: free text on the principal diagnosis, with no digit in it, for a true
+-- code; dengue most of all.
+SELECT assert_eq('DX04 is free text (no digit) for a true ICD-10 code on the principal diagnosis', count(*), 0)
+FROM answer_key k JOIN 'generator/truth/admission.parquet' a USING (admission_id)
+WHERE k.defect_code = 'DX04'
+  AND (regexp_matches(k.dirty_value, '\d') OR k.clean_value <> a.principal_dx
+       OR k.column_name NOT IN ('dx_utama', 'principal_dx'));
+
+SELECT assert_eq('DX04 hits dengue most, in both systems',
+  (SELECT count(*) FILTER (WHERE clean_value LIKE 'A97.%') > count(*) / 2
+          AND count(DISTINCT regexp_extract(file, '\.(\w+)$', 1)) = 2
+   FROM answer_key WHERE defect_code = 'DX04'), true);
+
+-- DT02: one hospital's dates month first; the clean value is the same date day first.
+SELECT assert_eq('DT02 is one Sabah hospital in the old HIS CSVs', count(DISTINCT c.value) || ' ' || bool_and(k.file LIKE '%-sabah.csv'), '1 true')
+FROM answer_key k JOIN cells c ON c.filename = k.file AND c.row_no = k.row_no AND c.column_name = 'kod_fasiliti'
+WHERE k.defect_code = 'DT02';
+
+SELECT assert_eq('DT02 writes MM/DD/YYYY for the DD/MM/YYYY date', count(*), 0)
+FROM answer_key WHERE defect_code = 'DT02'
+  AND CASE WHEN column_name = 'dikemaskini'
+           THEN strptime(dirty_value, '%m/%d/%Y %H:%M') <> strptime(clean_value, '%d/%m/%Y %H:%M')
+           ELSE strptime(dirty_value, '%m/%d/%Y') <> strptime(clean_value, '%d/%m/%Y') END;
+
+SELECT assert_eq('DT02 touches the birth, admit, discharge and update dates',
+                 string_agg(DISTINCT column_name, ',' ORDER BY column_name), 'dikemaskini,tarikh_keluar,tarikh_lahir,tarikh_masuk')
+FROM answer_key WHERE defect_code = 'DT02';
