@@ -120,17 +120,19 @@ source tools/cards.sh
 
 # expected: each Challenge's expected Parquet is its canonical solution's output
 # (#5). The solutions share one Work database, so each one's input is the
-# previous one's output, as for a Participant.
+# previous one's output, as for a Participant. They run in a scratch folder
+# that sees data/, so files a solution exports (C10) stay out of the repo.
 build_expected() {
   local out="${OUT_DIR:-.}" work card base table
   mkdir -p "$out/expected"
   out="$(cd "$out" && pwd)"
   work="$(mktemp -d)"
   trap 'rm -rf "$work"' RETURN
+  ln -s "$(pwd)/data" "$work/data"
   while read -r card <&3; do
     base="$(basename "$card" .md)"
     table="$(card_field "$card" output)"
-    { echo ".bail on"; cat "solutions/$base.sql"; } | "$DUCKDB" "$work/work.duckdb" >/dev/null
+    { echo ".bail on"; cat "solutions/$base.sql"; } | (cd "$work" && "$DUCKDB" work.duckdb) >/dev/null
     "$DUCKDB" "$work/work.duckdb" -c \
       "COPY (FROM $table ORDER BY ALL) TO '$out/expected/$table.parquet' (FORMAT parquet, COMPRESSION zstd);"
     echo "build.sh: wrote $out/expected/$table.parquet"

@@ -109,6 +109,19 @@ The single running health story that every Challenge and the Capstone are set in
 
 The report the Scenario works towards. It answers three questions for 2018–2021: 30-day readmission among diabetes patients by state; dengue admissions per 100,000 people by state and district; and which hospitals carry the admission load. The Challenges build its parts, and each Capstone team delivers a version of it.
 
+## Episode of care
+
+One patient's run of back-to-back hospital stays, counted as one: an admission that starts on or before the previous stay's end + 1 day, at any hospital, continues the episode. A transfer between hospitals is two admissions but one episode.
+_Avoid_: stay, admission (when the whole run is meant)
+
+## Index episode
+
+An episode of care from which a 30-day readmission is counted. In the State Health Brief it is a diabetes episode (principal diagnosis E10–E14) that does not end in death.
+
+## 30-day readmission
+
+A new episode of care, for any diagnosis, starting 1–30 days after an index episode ends.
+
 ## Challenge
 
 A hands-on task given to Participants after a short demo, followed by a reveal of the solution. Each Challenge has a Core tier and a Stretch tier, and comes with a Self-check.

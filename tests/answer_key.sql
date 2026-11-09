@@ -44,14 +44,14 @@ FROM answer_key k ANTI JOIN cells c
   ON c.filename = k.file AND c.row_no = k.row_no AND c.column_name = k.column_name
 WHERE k.row_no IS NOT NULL AND k.column_name IS NOT NULL;
 
--- AD01 and AD02 are about a whole record: it has no column, and no clean value
--- (a correct cleaning drops it).
-SELECT assert_eq('only AD01 and AD02 are whole-record defects', count(*), 0)
-FROM answer_key WHERE row_no IS NOT NULL AND (column_name IS NULL) <> (defect_code IN ('AD01', 'AD02'));
+-- AD01, AD02 and AD03 are about a whole record: it has no column, and no clean
+-- value (a correct cleaning drops AD01/AD02 and merges AD03 into its episode).
+SELECT assert_eq('only AD01, AD02 and AD03 are whole-record defects', count(*), 0)
+FROM answer_key WHERE row_no IS NOT NULL AND (column_name IS NULL) <> (defect_code IN ('AD01', 'AD02', 'AD03'));
 
 SELECT assert_eq('every record defect points at a real record and has no clean value', count(*), 0)
 FROM answer_key k
-WHERE k.defect_code IN ('AD01', 'AD02')
+WHERE k.defect_code IN ('AD01', 'AD02', 'AD03')
   AND (k.clean_value IS NOT NULL
        OR NOT EXISTS (SELECT 1 FROM cells c WHERE c.filename = k.file AND c.row_no = k.row_no));
 
@@ -86,12 +86,12 @@ FROM answer_key k ANTI JOIN file_columns f
   ON f.file = k.file AND f.column_name || ' ' || f.column_type = k.dirty_value AND f.column_name = k.column_name
 WHERE k.defect_code = 'SD01';
 
-SELECT assert_eq('only SD01 rows are whole-file defects', count(*), 0)
-FROM answer_key WHERE (row_no IS NULL) <> (defect_code = 'SD01');
+SELECT assert_eq('only SD01 and SH01 rows are whole-file defects', count(*), 0)
+FROM answer_key WHERE (row_no IS NULL) <> (defect_code IN ('SD01', 'SH01'));
 
--- The defects decided for 2018–2020 so far (#23, #24); later tickets add theirs.
+-- The defects decided for 2018–2020 (#23, #24, #29).
 SELECT assert_eq('2018-2020 defect codes', string_agg(DISTINCT defect_code, ',' ORDER BY defect_code),
-                 'AD01,AD02,DT01,DT03,DT04,DT05,DT06,DX01,GE01,GE03,GE04,ID01,ID02,ID03,ID04,NU02,PT01,SD01,TX01')
+                 'AD01,AD02,AD03,AD04,DT01,DT03,DT04,DT05,DT06,DX01,DX02,GE01,GE03,GE04,ID01,ID02,ID03,ID04,NU02,PT01,SD01,TX01')
 FROM answer_key WHERE file LIKE 'data/raw/20%';
 
 SELECT assert_eq('C1 defects (GE04, ID02, GE03) are in the old HIS CSVs only', count(*), 0)
@@ -122,3 +122,81 @@ WHERE k.defect_code IN ('ID03', 'ID04');
 SELECT assert_eq('ID01, ID03, ID04 dirty ICs keep the 9### serial', count(*), 0)
 FROM answer_key WHERE defect_code IN ('ID01', 'ID03', 'ID04')
   AND NOT regexp_full_match(regexp_replace(dirty_value, '[^0-9]', '', 'g'), '\d{8}9\d{3}');
+
+-- ------------------------------------------------------- Module 3 (#29)
+-- DX02 (C7): legacy dengue codes, A90 for A97.0/A97.9 and A91 for A97.1/A97.2,
+-- in all three systems and most in the old HIS. The clean value is the true code.
+SELECT assert_eq('DX02 writes A90 or A91 for the true A97.x code', count(*), 0)
+FROM answer_key WHERE defect_code = 'DX02'
+  AND NOT ((dirty_value = 'A90' AND clean_value IN ('A97.0', 'A97.9'))
+           OR (dirty_value = 'A91' AND clean_value IN ('A97.1', 'A97.2')));
+
+SELECT assert_eq('DX02 is in all three systems, most in the old HIS',
+  (SELECT count(DISTINCT regexp_extract(file, '\.(\w+)$', 1)) FROM answer_key WHERE defect_code = 'DX02') = 3
+  AND (SELECT count(*) FROM answer_key WHERE defect_code = 'DX02' AND file LIKE '%.csv')
+      > (SELECT count(*) FROM answer_key WHERE defect_code = 'DX02' AND file LIKE '%.parquet'), true);
+
+SELECT assert_eq('DX02 is on the principal diagnosis', count(*), 0)
+FROM answer_key WHERE defect_code = 'DX02' AND column_name NOT IN ('dx_utama', 'principal_dx');
+
+-- AD03 (C8): a transfer is two admission records, the second starting the day
+-- the first ends at another hospital. The Answer key names the receiving record
+-- and, in its dirty_value, the record it continues.
+CREATE TABLE truth_adm AS
+SELECT *, lag(admission_id) OVER (PARTITION BY patient_id ORDER BY admit_ts) AS prev_id
+FROM 'generator/truth/admission.parquet';
+
+SELECT assert_eq('every AD03 record is a truth transfer whose previous admission is in the extract', count(*), 0)
+FROM answer_key k JOIN truth_adm a USING (admission_id)
+WHERE k.defect_code = 'AD03' AND (a.admission_type <> 'TRANSFER' OR year(a.admit_ts) NOT BETWEEN 2018 AND 2020);
+
+SELECT assert_eq('every 2018-2020 transfer with both stays in the extract is an AD03 record',
+  (SELECT count(*) FROM answer_key WHERE defect_code = 'AD03'),
+  (SELECT count(*) FROM truth_adm a JOIN truth_adm p ON p.admission_id = a.prev_id
+   WHERE a.admission_type = 'TRANSFER' AND year(p.admit_ts) >= 2018 AND year(a.admit_ts) <= 2020));
+
+SELECT assert_eq('every AD03 dirty_value names the record of the stay it continues', count(*), 0)
+FROM (SELECT k.*, p.mrn AS prev_mrn, p.facility_code AS prev_facility,
+             regexp_extract(k.dirty_value, '^continues the stay in record (\d+) of (\S+)$', ['n', 'f']) AS ref
+      FROM answer_key k JOIN truth_adm a USING (admission_id) JOIN truth_adm p ON p.admission_id = a.prev_id
+      WHERE k.defect_code = 'AD03') k
+WHERE (SELECT list(value ORDER BY column_name) FROM cells c
+       WHERE c.filename = k.ref.f AND c.row_no = k.ref.n::BIGINT
+         AND c.column_name IN ('no_mrn', 'mrn', 'kod_fasiliti', 'facility_code'))
+      IS DISTINCT FROM [k.prev_facility, k.prev_mrn];
+
+SELECT assert_eq('AD03 is in all three systems', count(DISTINCT regexp_extract(file, '\.(\w+)$', 1)), 3)
+FROM answer_key WHERE defect_code = 'AD03';
+
+-- AD04 (C9): discharge status in words, Malay in the old HIS and English after.
+SELECT assert_eq('AD04 clean values are the four statuses, dirty values are not', count(*), 0)
+FROM answer_key WHERE defect_code = 'AD04'
+  AND (clean_value NOT IN ('DISCHARGED', 'DIED', 'TRANSFERRED', 'AOR')
+       OR dirty_value IN ('DISCHARGED', 'DIED', 'TRANSFERRED', 'AOR')
+       OR column_name NOT IN ('status_discaj', 'discharge_status'));
+
+SELECT assert_eq('AD04 is in all three systems and spells every status, deaths included',
+  (SELECT count(DISTINCT regexp_extract(file, '\.(\w+)$', 1)) || ' systems, ' || count(DISTINCT clean_value) || ' statuses'
+   FROM answer_key WHERE defect_code = 'AD04'), '3 systems, 4 statuses');
+
+SELECT assert_eq('AD04 spellings are not null spellings (C4 must not null them)', count(*), 0)
+FROM answer_key WHERE defect_code = 'AD04'
+  AND upper(trim(dirty_value)) IN ('NULL', 'N/A', 'NA', '-', 'TIADA', 'TIDAK DIKETAHUI', 'UNKNOWN');
+
+-- SH01 (C10): the dengue CSV is wide, one column per state. One row per state
+-- column: the column with its type, and the state it becomes once unpivoted.
+SELECT assert_eq('SH01 names every state column of the dengue CSV', count(*), 0)
+FROM ((SELECT column_name, column_name || ' ' || column_type
+       FROM (DESCRIBE FROM read_csv('data/open/dengue_state_age_2018_2021.csv'))
+       WHERE column_name NOT IN ('TAHUN', 'KUMPULAN UMUR')
+       EXCEPT SELECT column_name, dirty_value FROM answer_key WHERE defect_code = 'SH01')
+      UNION ALL
+      (SELECT column_name, dirty_value FROM answer_key WHERE defect_code = 'SH01'
+       EXCEPT SELECT column_name, column_name || ' ' || column_type
+       FROM (DESCRIBE FROM read_csv('data/open/dengue_state_age_2018_2021.csv'))));
+
+SELECT assert_eq('SH01 rows are on the dengue CSV and map KL and Labuan to their MoH names',
+  (SELECT string_agg(DISTINCT file, ',') FROM answer_key WHERE defect_code = 'SH01')
+  || ' ' || (SELECT clean_value FROM answer_key WHERE defect_code = 'SH01' AND column_name = 'WP KUALA LUMPUR')
+  || ' ' || (SELECT clean_value FROM answer_key WHERE defect_code = 'SH01' AND column_name = 'WP LABUAN'),
+  'data/open/dengue_state_age_2018_2021.csv WILAYAH PERSEKUTUAN KUALA LUMPUR WILAYAH PERSEKUTUAN LABUAN');

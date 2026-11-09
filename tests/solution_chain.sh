@@ -3,8 +3,9 @@
 # run each Challenge's solution in chain order, then the card's own Self-check
 # cells. 0 rows differ means a Participant with the right answer sees "done".
 # The Self-check must also catch a wrong answer (a missing, changed or extra
-# row), and the card's Checkpoint must bring it back to 0. Finally, the committed expected/ is what `build.sh expected`
-# writes today.
+# row), and the card's Checkpoint must bring it back to 0. Finally, the
+# committed expected/ is what `build.sh expected` writes today, and writing it
+# leaves the repo's working tree untouched.
 set -u
 root="$(cd "$(dirname "$0")/.." && pwd)"
 tmp="$(mktemp -d)"
@@ -88,9 +89,15 @@ while read -r card <&3; do
 $(card_block "$card" checkpoint | sql_cell 1)"
 done 3< <(challenge_cards)
 
-# expected/ in the repo is current.
+# expected/ in the repo is current, and building it writes nothing into the
+# repo: solutions run in a scratch folder, so a COPY TO (C10's export) lands
+# there, not in the repo root.
 cd "$root" || exit 1
+before="$(git status --porcelain --untracked-files=all)"
 if OUT_DIR="$tmp/fresh" ./build.sh expected >"$tmp/expected.log" 2>&1; then
+  after="$(git status --porcelain --untracked-files=all)"
+  if [ "$before" = "$after" ]; then ok "build.sh expected leaves the repo's working tree as it was"
+  else bad "build.sh expected changed the repo's working tree:"; diff <(echo "$before") <(echo "$after") | sed 's/^/  /'; fi
   for f in expected/*.parquet; do
     cmp -s "$f" "$tmp/fresh/$f" || bad "committed $f differs from what build.sh expected writes (rebuild it)"
   done
