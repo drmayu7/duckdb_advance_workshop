@@ -1,8 +1,8 @@
 {
-  "about": "Captured output of demos/m3/s3-demo.sql for the Module 3 backup slides (slides/m3.js). Rows: the same queries run on the local large/ folder that was uploaded to the bucket (9 Nov). Fetched bytes: measured against the live bucket in ap-southeast-5 on 9 Nov, with enable_external_file_cache = false. The 10 Nov dry run replaces them with its own capture.",
-  "captured": "9 Nov 2026",
+  "about": "Captured output of demos/m3/s3-demo.sql for the Module 3 backup slides (slides/m3.js), from the 10 Nov dry run: DuckDB 1.5.6 against the live bucket in ap-southeast-5 with a fresh SSO login, enable_external_file_cache = false. Rows and fetched bytes matched the 9 Nov capture exactly.",
+  "captured": "10 Nov 2026",
   "region": "ap-southeast-5",
-  "total": "about 45 s for the whole demo",
+  "total": "about 45 s for the whole demo (43 s on 10 Nov)",
   "steps": {
     "1": {
       "fetched": "0.5 MiB",
