@@ -20,14 +20,16 @@ trap cleanup EXIT
 source "$root/tests/lib/worktree_ref.sh"
 ref="$(worktree_ref "$root")" || { bad "could not snapshot the working tree"; finish; }
 
-id=20261110-2100
+# shellcheck source=tests/lib/content_id.sh
+source "$root/tests/lib/content_id.sh"
+id="$(deck_content_id "$root")"; [ -n "$id" ] || { bad "handouts/refresher.pptx shows no Content id"; finish; }
 indent() { sed "s/^/  /"; }
 run_or_die() { # run_or_die <log> <cmd...>
   local log="$1"; shift
-  if ! "$@" >"$tmp/$log" 2>&1; then bad "$* failed:"; sed 's/^/  /' "$tmp/$log"; finish; fi
+  if ! "$@" >"$tmp/$log" 2>&1; then bad "$* failed:"; indent <"$tmp/$log"; finish; fi
 }
 run_or_die setup.log env DIST_DIR="$tmp/dist" BUNDLE_DATE=20261109 "$root/build.sh" setup
-run_or_die content.log env DIST_DIR="$tmp/dist" CONTENT_REF="$ref" CONTENT_ID=$id "$root/build.sh" content
+run_or_die content.log env DIST_DIR="$tmp/dist" CONTENT_REF="$ref" CONTENT_ID="$id" "$root/build.sh" content
 setup_zip="$tmp/dist/duckdb-bundle-20261109.zip"; content_zip="$tmp/dist/duckdb-content-$id.zip"
 
 # A good pair: the banner, then 0 rows differ for each card up to C3.

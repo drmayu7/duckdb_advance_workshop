@@ -51,5 +51,6 @@ while read -r card <&3; do
   fi
   if [ -n "$last" ] && [[ "$base" == "$last"* ]]; then reached=1; break; fi
 done 3< <(challenge_cards)
+if [ "$n" = 0 ]; then echo "dry-run: FAILED: no Challenge cards in the release" >&2; exit 1; fi
 if [ -n "$last" ] && [ -z "$reached" ]; then echo "dry-run: FAILED: no card '$last' in the release" >&2; exit 1; fi
 if [ "$failures" = 0 ]; then echo "dry-run: OK (Content $id, $n cards)"; else echo "dry-run: FAILED ($failures of $n cards)" >&2; exit 1; fi

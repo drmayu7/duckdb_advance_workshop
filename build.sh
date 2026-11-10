@@ -46,7 +46,8 @@ Targets:
   content     Build the Content release dist/duckdb-content-YYYYMMDD-HHMM.zip
               from HEAD (CONTENT_ID overrides the id, DIST_DIR the folder,
               CONTENT_REF the commit or tree it is built from); refuses decks in
-              handouts/ that show another Content id (build slides first)
+              handouts/ that don't show its Content id (build slides first;
+              CONTENT_DECK_ID_CHECK=off skips this, for tests only)
   dry-run <setup zip> <content zip> [last card]
               Before publishing: extract the Setup release fresh, apply the
               Content release, launch check-only, then run every solution up to
@@ -312,15 +313,19 @@ build_content() {
   # CONTENT_ID=$id and commit them first). CONTENT_DECK_ID_CHECK=off is for tests
   # that need two releases from one tree.
   if [ "${CONTENT_DECK_ID_CHECK:-on}" != off ]; then
-    local deck shown bad=0
+    local deck shown bad=0 decks=0 matched=0
     for deck in "$stage"/handouts/*.pptx; do
       [ -f "$deck" ] || continue
-      for shown in $(unzip -p "$deck" 'ppt/slides/*.xml' | grep -oE 'Content [0-9]{8}-[0-9]{4}' | awk '{print $2}' | sort -u); do
-        if [ "$shown" != "$id" ]; then
-          echo "build.sh: ${deck#"$stage"/} shows Content $shown, not $id: run CONTENT_ID=$id ./build.sh slides and commit" >&2; bad=1
-        fi
+      decks=$((decks + 1))
+      # Tags stripped first, so an id split across text runs is still seen.
+      for shown in $(unzip -p "$deck" 'ppt/slides/*.xml' | perl -pe 's/<[^>]+>//g' | grep -oE 'Content [0-9]{8}-[0-9]{4}' | awk '{print $2}' | sort -u); do
+        if [ "$shown" = "$id" ]; then matched=1
+        else echo "build.sh: ${deck#"$stage"/} shows Content $shown, not $id: run CONTENT_ID=$id ./build.sh slides and commit" >&2; bad=1; fi
       done
     done
+    if [ "$decks" -gt 0 ] && [ "$matched" = 0 ] && [ "$bad" = 0 ]; then
+      echo "build.sh: no deck in handouts/ shows Content $id: run CONTENT_ID=$id ./build.sh slides and commit" >&2; bad=1
+    fi
     [ "$bad" = 0 ] || return 1
   fi
   git show "$ref:setup/smoke_test.sql" >"$stage/smoke_test.sql"
