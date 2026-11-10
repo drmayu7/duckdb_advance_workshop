@@ -21,6 +21,17 @@ fi
 zip="$tmp/dist/duckdb-content-$id.zip"
 [ -f "$zip" ] || { bad "no $zip"; finish; }
 
+# The morning slide must show the release's own id. Decks built for 20261110-2100
+# don't belong in a 20261111-0700 release: the build refuses, naming the deck.
+if DIST_DIR="$tmp/dist-other" CONTENT_ID=20261111-0700 CONTENT_REF="$ref" "$root/build.sh" content >"$tmp/other.log" 2>&1; then
+  bad "a release whose decks show another Content id was built"
+elif grep -q 'handouts/refresher.pptx shows Content 20261110-2100, not 20261111-0700' "$tmp/other.log" \
+     && [ ! -e "$tmp/dist-other/duckdb-content-20261111-0700.zip" ]; then
+  ok "a release whose decks show another Content id is refused, naming the deck"
+else
+  bad "the mismatched release failed without naming the deck, or left a zip:"; sed 's/^/  /' "$tmp/other.log"
+fi
+
 # The decided content paths, as committed at HEAD, plus the four built files.
 {
   git -C "$root" ls-tree -r --name-only "$ref" -- cards solutions expected data/raw \

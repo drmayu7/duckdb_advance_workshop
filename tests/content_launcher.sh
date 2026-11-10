@@ -29,7 +29,8 @@ run_or_die() { # run_or_die <log> <cmd...>
 }
 run_or_die setup.log env DIST_DIR="$tmp/dist" BUNDLE_DATE=20261109 "$root/build.sh" setup
 run_or_die day1.log env DIST_DIR="$tmp/dist" CONTENT_REF="$ref" CONTENT_ID=$day1 "$root/build.sh" content
-run_or_die day2.log env DIST_DIR="$tmp/dist" CONTENT_REF="$ref" CONTENT_ID=$day2 "$root/build.sh" content
+# One tree, two ids: its decks show only Day 1's, so the deck id check is off for Day 2.
+run_or_die day2.log env CONTENT_DECK_ID_CHECK=off DIST_DIR="$tmp/dist" CONTENT_REF="$ref" CONTENT_ID=$day2 "$root/build.sh" content
 pristine="$tmp/pristine"
 mkdir -p "$pristine" && ditto -x -k "$tmp/dist/duckdb-bundle-20261109.zip" "$pristine"
 

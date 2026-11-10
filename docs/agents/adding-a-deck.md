@@ -26,7 +26,7 @@ The deck tests share `tests/lib/decks.sh`: `check_deck` (Challenge slides, demo 
 
 ## The Content id
 
-A deck with `contentIdSlide` needs `CONTENT_ID`, the id of the Content release that will carry it. The order is: `CONTENT_ID=<id> ./build.sh slides`, commit `handouts/`, then `CONTENT_ID=<id> ./build.sh content`.
+A deck with `contentIdSlide` needs `CONTENT_ID`, the id of the Content release that will carry it, and `build.sh content` refuses decks built for another id. The release steps are in `docs/agents/releasing-content.md`.
 
 ## Visual QA
 

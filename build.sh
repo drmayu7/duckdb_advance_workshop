@@ -45,7 +45,13 @@ Targets:
               (DIST_DIR overrides the folder)
   content     Build the Content release dist/duckdb-content-YYYYMMDD-HHMM.zip
               from HEAD (CONTENT_ID overrides the id, DIST_DIR the folder,
-              CONTENT_REF the commit or tree it is built from)
+              CONTENT_REF the commit or tree it is built from); refuses decks in
+              handouts/ that show another Content id (build slides first)
+  dry-run <setup zip> <content zip> [last card]
+              Before publishing: extract the Setup release fresh, apply the
+              Content release, launch check-only, then run every solution up to
+              the last card (e.g. c06 for Day 1; default all) on the bundle's own
+              DuckDB with its Self-check (Apple Silicon Mac)
   email       Render the pre-workshop email to dist/pre-workshop-email.md
               (DRIVE_LINK fills the Drive link; BUNDLE_DATE and DIST_DIR as above)
   help        Show this message
@@ -302,6 +308,21 @@ build_content() {
   while read -r p; do present+=("$p"); done < <(git ls-tree --name-only "$ref" -- "${CONTENT_PATHS[@]}")
   [ "${#present[@]}" -gt 0 ] || { echo "build.sh: $ref has no content to release" >&2; return 1; }
   git archive "$ref" -- "${present[@]}" "${CONTENT_NEVER[@]}" | tar -x -C "$stage"
+  # The morning slide must show this release's id (rebuild the decks with
+  # CONTENT_ID=$id and commit them first). CONTENT_DECK_ID_CHECK=off is for tests
+  # that need two releases from one tree.
+  if [ "${CONTENT_DECK_ID_CHECK:-on}" != off ]; then
+    local deck shown bad=0
+    for deck in "$stage"/handouts/*.pptx; do
+      [ -f "$deck" ] || continue
+      for shown in $(unzip -p "$deck" 'ppt/slides/*.xml' | grep -oE 'Content [0-9]{8}-[0-9]{4}' | awk '{print $2}' | sort -u); do
+        if [ "$shown" != "$id" ]; then
+          echo "build.sh: ${deck#"$stage"/} shows Content $shown, not $id: run CONTENT_ID=$id ./build.sh slides and commit" >&2; bad=1
+        fi
+      done
+    done
+    [ "$bad" = 0 ] || return 1
+  fi
   git show "$ref:setup/smoke_test.sql" >"$stage/smoke_test.sql"
   bash tools/cards_html.sh "$stage" "$stage/cards.html"
   echo "$id" >"$stage/release.txt"
@@ -342,6 +363,7 @@ case "${1:-help}" in
   slides)    build_slides ;;
   cards)     build_cards ;;
   content)   build_content ;;
+  dry-run)   shift; bash tools/dry_run.sh "$@" ;;
   email)     build_email ;;
   help|-h|--help) usage ;;
   *) echo "build.sh: unknown target '$1'" >&2; usage >&2; exit 2 ;;
