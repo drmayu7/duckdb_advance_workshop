@@ -20,16 +20,19 @@ source "$root/tests/lib/worktree_ref.sh"
 ref="$(worktree_ref "$root")" || { bad "could not snapshot the working tree"; finish; }
 
 N=16 # the Setup release's 15 checks (V1, nine E-<ext>, D1, W1, W2, F1, U1) and C1
-day1=20261110-2100
-day2=20261111-0700
+# shellcheck source=tests/lib/content_id.sh
+source "$root/tests/lib/content_id.sh"
+day1="$(deck_content_id "$root")"; [ -n "$day1" ] || { bad "handouts/refresher.pptx shows no Content id"; finish; }
+day2=20991231-2359 # any later release
 
 run_or_die() { # run_or_die <log> <cmd...>
   local log="$1"; shift
   if ! "$@" >"$tmp/$log" 2>&1; then bad "$* failed:"; sed 's/^/  /' "$tmp/$log"; finish; fi
 }
 run_or_die setup.log env DIST_DIR="$tmp/dist" BUNDLE_DATE=20261109 "$root/build.sh" setup
-run_or_die day1.log env DIST_DIR="$tmp/dist" CONTENT_REF="$ref" CONTENT_ID=$day1 "$root/build.sh" content
-run_or_die day2.log env DIST_DIR="$tmp/dist" CONTENT_REF="$ref" CONTENT_ID=$day2 "$root/build.sh" content
+run_or_die day1.log env DIST_DIR="$tmp/dist" CONTENT_REF="$ref" CONTENT_ID="$day1" "$root/build.sh" content
+# One tree, two ids: its decks show only day1's, so the deck id check is off for day2.
+run_or_die day2.log env CONTENT_DECK_ID_CHECK=off DIST_DIR="$tmp/dist" CONTENT_REF="$ref" CONTENT_ID="$day2" "$root/build.sh" content
 pristine="$tmp/pristine"
 mkdir -p "$pristine" && ditto -x -k "$tmp/dist/duckdb-bundle-20261109.zip" "$pristine"
 
@@ -61,8 +64,8 @@ if grep -qi 'error' "$b/setup.log"; then bad "a Setup-only launch logs errors:";
 else ok "a Setup-only launch logs no errors"; fi
 "$b/bin/osx_arm64/duckdb" "$b/my_work.duckdb" -c "CREATE TABLE mine AS SELECT 42 AS answer;" >/dev/null
 before="$(sha256_of "$b/my_work.duckdb")"
-drop $day1; launch
-expect_ok "Day 1 release applied" $day1
+drop "$day1"; launch
+expect_ok "Day 1 release applied" "$day1"
 [ -f "$b/cards/w-warmup.md" ] && [ -f "$b/cards.html" ] || bad "Day 1 release: cards not extracted over the bundle"
 if [ -f "$b/updates/applied/duckdb-content-$day1.zip" ] && [ ! -e "$b/updates/duckdb-content-$day1.zip" ]; then
   ok "the zip moved to updates/applied/"; else bad "the zip was not moved to updates/applied/"; fi
@@ -72,19 +75,19 @@ else bad "applying the release changed my_work.duckdb"; fi
 
 # Relaunching does not re-apply it: a card deleted afterwards stays deleted, and C1 says so.
 rm "$b/cards/c01-read-csv.md"; launch
-expect_failed "a release file deleted" "C1" $day1
+expect_failed "a release file deleted" "C1" "$day1"
 [ -e "$b/cards/c01-read-csv.md" ] && bad "relaunch re-applied an applied zip"
 
-fresh truncated; drop $day1; launch
+fresh truncated; drop "$day1"; launch
 : >"$b/data/warmup/patient_2017.parquet"; launch
-expect_failed "a release file truncated" "C1" $day1
+expect_failed "a release file truncated" "C1" "$day1"
 
-fresh no-manifest; drop $day1; launch; rm "$b/content_manifest.csv"; launch
-expect_failed "content_manifest.csv missing" "C1" $day1
+fresh no-manifest; drop "$day1"; launch; rm "$b/content_manifest.csv"; launch
+expect_failed "content_manifest.csv missing" "C1" "$day1"
 
 # Two releases (missed a day): applied in name order, the latest wins.
-fresh two; drop $day2; drop $day1; launch
-expect_ok "two releases at once" $day2
+fresh two; drop "$day2"; drop "$day1"; launch
+expect_ok "two releases at once" "$day2"
 [ "$(find "$b/updates/applied" -name '*.zip' | wc -l | tr -d ' ')" = 2 ] || bad "two releases: not both moved to updates/applied/"
 
 # A corrupt download: U1, and it stays in updates/ for the USB copy to replace.
@@ -92,5 +95,5 @@ fresh corrupt; head -c 4000 "$tmp/dist/duckdb-content-$day1.zip" >"$b/updates/du
 expect_failed "a corrupt zip in updates/" "U1" none 15
 [ -f "$b/updates/duckdb-content-$day1.zip" ] || bad "the corrupt zip was moved out of updates/"
 cp "$tmp/dist/duckdb-content-$day1.zip" "$b/updates/"; launch
-expect_ok "the corrupt zip replaced by a good copy" $day1
+expect_ok "the corrupt zip replaced by a good copy" "$day1"
 finish

@@ -13,7 +13,8 @@ How the engineering skills should consume this repo's domain documentation when 
   - `duckdb-extensions-integrations.md`: per-extension notes, exact Offline bundle install steps, Python/R integration.
 - **Settled decisions** live on GitHub, not in the repo: #16 is the build spec, and each decision ticket it cites (#7, #13, …) holds its answer in one resolution comment. Fetch only that comment, as whole issues run to tens of KB: `gh issue view N --json comments --jq '.comments[].body | select(test("^(## Resolution|Resolved)"))'`. Read later comments too when a ticket has a correction.
 - **`docs/agents/adding-a-challenge.md`**: before adding or changing a Challenge card, its solution, expected result or generator defect: the files, what the card tests check, and the chain rules.
-- **`docs/agents/adding-a-deck.md`**: before adding or changing a slide deck or its demo SQL: what `slides/theme.js` builds from the repo, the Content id order, and the visual QA.
+- **`docs/agents/releasing-content.md`**: before building or publishing a Content release (catch-up or hotfix): the deck, build, dry-run and merge steps, and what never ships.
+- **`docs/agents/adding-a-deck.md`**: before adding or changing a slide deck or its demo SQL: what `slides/theme.js` builds from the repo, the Content id, and the visual QA.
 
 If any of these files don't exist, **proceed silently**. Don't flag their absence; don't suggest creating them upfront. The `/domain-modeling` skill (reached via `/grill-with-docs` and `/improve-codebase-architecture`) creates them lazily when terms or decisions actually get resolved.
 

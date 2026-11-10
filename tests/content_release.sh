@@ -14,12 +14,26 @@ trap 'rm -rf "$tmp"' EXIT
 source "$root/tests/lib/worktree_ref.sh"
 ref="$(worktree_ref "$root")" || { bad "could not snapshot the working tree"; finish; }
 
-id=20261110-2100
+# shellcheck source=tests/lib/content_id.sh
+source "$root/tests/lib/content_id.sh"
+id="$(deck_content_id "$root")"; [ -n "$id" ] || { bad "handouts/refresher.pptx shows no Content id"; finish; }
 if ! DIST_DIR="$tmp/dist" CONTENT_ID="$id" CONTENT_REF="$ref" "$root/build.sh" content >"$tmp/build.log" 2>&1; then
   bad "build.sh content failed:"; sed 's/^/  /' "$tmp/build.log"; finish
 fi
 zip="$tmp/dist/duckdb-content-$id.zip"
 [ -f "$zip" ] || { bad "no $zip"; finish; }
+
+# The morning slide must show the release's own id. Decks built for $id don't
+# belong in any other release: the build refuses, naming the deck.
+other=19990101-0000
+if DIST_DIR="$tmp/dist-other" CONTENT_ID="$other" CONTENT_REF="$ref" "$root/build.sh" content >"$tmp/other.log" 2>&1; then
+  bad "a release whose decks show another Content id was built"
+elif grep -q "handouts/refresher.pptx shows Content $id, not $other" "$tmp/other.log" \
+     && [ ! -e "$tmp/dist-other/duckdb-content-$other.zip" ]; then
+  ok "a release whose decks show another Content id is refused, naming the deck"
+else
+  bad "the mismatched release failed without naming the deck, or left a zip:"; sed 's/^/  /' "$tmp/other.log"
+fi
 
 # The decided content paths, as committed at HEAD, plus the four built files.
 {
