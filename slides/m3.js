@@ -496,7 +496,7 @@ deck.demoSlides("demos/m3/s3-demo.sql", {
   label: "Live",
   steps: {
     1: { title: "A count from the footers alone", notes: `
-Run the count: 30 million admissions, and almost nothing downloaded (0.5 MiB on 9 Nov): Parquet keeps the row count in each file's footer. No keys in the SQL: the secret from the setup cell supplies the credential.
+Run the count: 30 million admissions, and almost nothing downloaded (0.5 MiB in the dry run): Parquet keeps the row count in each file's footer. No keys in the SQL: the secret from the setup cell supplies the credential.
 
 Then the which_secret cell: it names the secret DuckDB picked for this path (demo). Useful when several secrets exist; the private-S3 slide comes back to it.` },
     2: { title: "Hive partitioning: year from the folder names", notes: `
@@ -504,7 +504,7 @@ DESCRIBE: year is a column, but it isn't in any file. DuckDB reads it from the f
     3: { title: "Clear the HTTP log", notes: `
 The setup cell turned on HTTP logging in memory. Clear it now, so the next fetched() shows one query's bytes only.` },
     "3a": { title: "Two columns, one year: 7 MiB", notes: `
-Run the query, then fetched(): about 7 MiB in 76 requests on 9 Nov. The two columns are facility_code, read from the 4 files of 2021, and year, which comes from the folder names and costs nothing. Then clear the log again.` },
+Run the query, then fetched(): about 7 MiB in 76 requests in the dry run. The two columns are facility_code, read from the 4 files of 2021, and year, which comes from the folder names and costs nothing. Then clear the log again.` },
     "3b": { title: "Every column, every year: 414 MiB", notes: `
 On a phone hotspot, skip this one and quote the backup figure: 414 MiB in 271 requests. count(COLUMNS(*)) forces every column of every file over the network: about 60 times step 3a.
 
@@ -516,7 +516,7 @@ Synthetic data: the numbers say nothing about the real hospitals.` },
     5: { title: "Bring home the answer, not the data", notes: `
 COPY writes ten rows next to the Work database: the answer is home, the 30 million rows never left the bucket. Same COPY as C10's export a few minutes ago.
 
-The whole demo ran in about 45 seconds on 9 Nov.` },
+The whole demo ran in about 45 seconds in the dry run (43 s on 10 Nov).` },
   },
 });
 

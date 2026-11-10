@@ -8,7 +8,7 @@
 -- private bucket" section, or point the paths at a local large/ folder.
 --
 -- Fallback if the network fails: a phone hotspot, skipping step 3b, then the
--- backup slides captured in the dry run. Bytes fetched, measured on 9 Nov:
+-- backup slides captured in the dry run. Bytes fetched, measured in the 10 Nov dry run:
 -- step 1 0.5 MiB, step 3a 7 MiB, step 3b 414 MiB, step 4 55 MiB.
 
 -- begin setup
